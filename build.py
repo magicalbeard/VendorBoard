@@ -59,7 +59,7 @@ def main():
     with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
         z.write(ba2, NAME + '.ba2')
         z.write(os.path.join(HERE, 'Config', NAME + '.json'), NAME + '.json')
-        z.write(os.path.join(HERE, 'extras', 'hudmodloader.ini'), 'hudmodloader.ini')
+        z.write(os.path.join(HERE, 'extras', 'hudmodloader.example.ini'), 'hudmodloader.example.ini')
     downloads = os.path.join(os.path.expanduser('~'), 'Downloads')
     if os.path.isdir(downloads):
         shutil.copy(zpath, os.path.join(downloads, os.path.basename(zpath)))

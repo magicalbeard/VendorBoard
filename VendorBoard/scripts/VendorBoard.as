@@ -39,7 +39,7 @@ package
    public class VendorBoard extends MovieClip
    {
 
-      public static const VERSION:String = "1.1";
+      public static const VERSION:String = "1.2";
 
       private var baseCfg:Object = null;
 

@@ -13,7 +13,7 @@ Nexus Mods: https://www.nexusmods.com/fallout76/mods/4436
 
 1. Copy `VendorBoard.ba2` into `Data` and add it to `sResourceArchive2List` in `Fallout76Custom.ini`.
 2. Copy `VendorBoard.json` into `Data`. It is re-read every 10 seconds while the game runs.
-3. Add a line `VendorBoard` to `Data\hudmodloader.ini` (`extras/hudmodloader.ini` is an example).
+3. Add a line `VendorBoard` to `Data\hudmodloader.ini` (`extras/hudmodloader.example.ini` is an example).
 
 The comments in `Config/VendorBoard.json` describe every setting.
 
@@ -23,7 +23,7 @@ The comments in `Config/VendorBoard.json` describe every setting.
 - `VendorBoard/scripts/Shared/`, `Mobile/`, `scaleform/` - Fallout 76 interface classes
 - `VendorBoard/scripts/SharedHUDTools.as` - HUD Mod Loader menu bridge
 - `VendorBoard/scripts/com/adobe/` - as3corelib JSON decoder
-- `Config/VendorBoard.json` - shipped config; `extras/hudmodloader.ini` - example loader list
+- `Config/VendorBoard.json` - shipped config; `extras/hudmodloader.example.ini` - example loader list
 - `build.py`, `tools/ba2pack.py` - build
 
 ## Build
