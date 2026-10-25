@@ -1,0 +1,11 @@
+VendorBoard
+Copyright (C) 2026 MagicalBeard (Patrick Leedom). GPL-3.0, see LICENSE.
+
+Based on HUD-PlayerList by MsZelia, GPL-3.0
+  https://github.com/MsZelia/HUD-PlayerList
+  https://www.nexusmods.com/fallout76/mods/2811
+
+Also included:
+  SharedHUDTools - HUD Mod Loader (Mapekz, dtim, MsZelia), https://www.nexusmods.com/fallout76/mods/3144
+  Shared.*, Mobile.*, scaleform.gfx.* - Fallout 76 interface classes (Bethesda)
+  com.adobe.serialization.json - as3corelib (Adobe, BSD)

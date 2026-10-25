@@ -1,0 +1,246 @@
+{
+	// VendorBoard - players on the server and what their vendors stock, on the map screen.
+	// Lives in Data\VendorBoard.json and is re-read every 10 s while the game runs; comments are allowed.
+	// Any key left out keeps its built-in default. Most of this can also be changed live from the
+	// HUDModLoader menu (F11 > VendorBoard); menu changes last for the session, this file sets the defaults.
+
+	// ================================================================ DEFAULT (USER) FILTER - EDIT THIS
+	// This is YOUR view: the F2 preset the board starts on. The other presets are fixed category views;
+	// this one shows whatever pills you list below and nothing else. Menu changes (FILTERING > Badges) only
+	// last for the session, so make your lasting choices here.
+	//
+	// One line per pill, in any order (pills always draw mods, weapons, armor, apparel, plans, aid, ammo,
+	// junk/misc, higher stars first). Delete a line to drop that pill; uncomment one from the catalogue to add
+	// it. {star} renders as the in-game star. The colours here also feed the legend.
+	"badges": [
+		{ "id": "MODS_WEAPON4", "label": "4{star}W",   "color": "0xf6cd60" },   // 4-star weapon mod boxes
+		{ "id": "MODS_ARMOR4",  "label": "4{star}A",   "color": "0xf6cd60" },   // 4-star armor mod boxes
+		{ "id": "MODS_PA4",     "label": "4{star}PA",  "color": "0xf6cd60" },   // 4-star power armor mod boxes
+		{ "id": "MODS_WEAPON3", "label": "3{star}W",   "color": "0xe0b48c" },
+		{ "id": "MODS_ARMOR3",  "label": "3{star}A",   "color": "0xe0b48c" },
+		{ "id": "MODS_PA3",     "label": "3{star}PA",  "color": "0xe0b48c" },
+		{ "id": "WEAPON4",      "label": "Wep4{star}", "color": "0xff9f6e" },   // 4-star legendary weapons
+		{ "id": "ARMOR4",       "label": "Arm4{star}", "color": "0xff9f6e" },   // 4-star legendary armor
+		{ "id": "WEAPON3",      "label": "Wep3{star}", "color": "0xe0b48c" },
+		{ "id": "ARMOR3",       "label": "Arm3{star}", "color": "0xe0b48c" },
+		{ "id": "PLAN",         "label": "Plan",       "color": "0x9fd79a" },
+		{ "id": "APPAREL",      "label": "Aprl",       "color": "0xc9a7ff" },
+		{ "id": "MODS",         "label": "Mods",       "color": "0xa09a84" }    // loose mods (any)
+		// ---- catalogue: copy a line above the closing ] to add it (mind the commas) ----
+		// { "id": "MODS_WEAPON2", "label": "2{star}W",   "color": "0xd6c9a8" },
+		// { "id": "MODS_ARMOR2",  "label": "2{star}A",   "color": "0xd6c9a8" },
+		// { "id": "MODS_PA2",     "label": "2{star}PA",  "color": "0xd6c9a8" },
+		// { "id": "MODS_WEAPON1", "label": "1{star}W",   "color": "0xcfc6b0" },
+		// { "id": "MODS_ARMOR1",  "label": "1{star}A",   "color": "0xcfc6b0" },
+		// { "id": "MODS_PA1",     "label": "1{star}PA",  "color": "0xcfc6b0" },
+		// { "id": "WEAPON2",      "label": "Wep2{star}", "color": "0xd6c9a8" },
+		// { "id": "ARMOR2",       "label": "Arm2{star}", "color": "0xd6c9a8" },
+		// { "id": "WEAPON1",      "label": "Wep1{star}", "color": "0xcfc6b0" },
+		// { "id": "ARMOR1",       "label": "Arm1{star}", "color": "0xcfc6b0" },
+		// { "id": "WEAPON0",      "label": "Wep",        "color": "0xc8b98a" },   // plain weapons
+		// { "id": "ARMOR0",       "label": "Arm",        "color": "0xc8b98a" },   // plain armor
+		// { "id": "STIMPAK",      "label": "Stim",       "color": "0x9fc7c1" },
+		// { "id": "MEDS",         "label": "Meds",       "color": "0x9fc7c1" },
+		// { "id": "FOOD",         "label": "Food",       "color": "0x9fc7c1" },
+		// { "id": "DRINK",        "label": "Drink",      "color": "0x9fc7c1" },
+		// { "id": "AMMO",         "label": "Ammo",       "color": "0x9fc7c1" },
+		// { "id": "EXPLOSIVE",    "label": "Expl",       "color": "0x9fc7c1" },
+		// { "id": "JUNK",         "label": "Junk",       "color": "0x9fc7c1" },
+		// { "id": "MISC",         "label": "Misc",       "color": "0x9fc7c1" }
+	],
+	// Rows with nothing to show in this view (no shop, or a shop with none of the pills above) are hidden.
+	// false shows them with a grey "empty shop" / "no shop" pill. Fixed category presets always hide them;
+	// ALL + EMPTY VENDORS never does. (menu: FILTERING > Hide rows with no stock)
+	"hideEmptyShops": true,
+	// ================================================================ end of DEFAULT (USER) FILTER
+
+	// ---------------------------------------------------------------- hotkeys
+	// Need xScal or ZFE. Values: F-keys, NUMPAD0-9, NUMPAD+, single letters/digits, INSERT, HOME, PAGEUP ...
+	// "" turns a key off. F1 and F10 belong to Improved HUD, F8 to xScal, F11 to HUDModLoader - keep off those.
+	"hotkeys": true,
+	"presetKey": "F2",       // next filter preset
+	"sortKey": "F3",         // next sort preset
+	"viewKey": "F4",         // cycles the view: expanded -> compact -> hidden -> expanded
+	"showKey": "",           // optional plain hide/show key (e.g. "F9"); the menu and viewKey already cover it
+
+	// ---------------------------------------------------------------- position and size
+	// origin "screen": x / y are measured from the visible screen's top-left corner, so the same numbers work on
+	// 16:9 and ultrawide monitors. origin "stage": raw HUD coordinates (HUDPlayerList convention, where x = 0 is
+	// the left edge of a 16:9 screen and an ultrawide's edge is near -320). Nudge live from the menu (UI > Position).
+	//
+	// Layout that never covers the World Activity list / fast-travel menu (lower middle of the map): dock the
+	// board to the right of that panel with a narrow shop column -
+	//   "origin": "stage", "x": 410, "y": 200,
+	//   "columns": { "level": 36, "name": 110, "distance": 100, "cost": 44, "vendor": 300, "vendorMax": 300 },
+	//   "nameMaxChars": 12
+	// Ultrawide: the default works unchanged (20 units in from your screen's real left edge). If you prefer the
+	// raw-coordinate layout the author uses on a 21:9 monitor, set:  "origin": "stage", "x": -320, "y": 200
+	"origin": "screen",
+	"x": 20,
+	"y": 200,
+	"font": "$MAIN_Font_Bold",   // other working fonts: $MAIN_Font, $Futura_Bold, $ConsoleFont, $Terminal_Font
+	"textSize": 16,          // rows and header (menu: UI > Text size)
+	"smallTextSize": 13,     // legend, filter list and hotkeys line (menu: UI > Small text size)
+	"scaleColumns": true,    // the column widths below are for text size 16 and scale with textSize (false = as-is)
+	"rowSpacing": 0,         // extra pixels between rows
+	"textShadow": true,
+	"background": true,
+	"backgroundColor": "0x0b0a08",
+	"backgroundAlpha": 0.4,
+	"padding": 6,
+
+	// Column widths. The panel keeps exactly these widths whatever a filter shows (no size jumps); only the
+	// header can widen it when a long filter name needs more room. Pills past the shop column continue on the
+	// next line of the row (pillWrap). vendorGrow: true lets the shop column widen with content up to vendorMax.
+	"columns": { "level": 40, "name": 130, "distance": 100, "cost": 50, "vendor": 600, "vendorMax": 900 },
+	"fixedWidth": true,
+	"vendorGrow": false,
+	"nameMaxChars": 14,      // longer player names are cut with an ellipsis so the name column stays narrow
+	"minRows": 0,            // reserve space for at least this many rows so the panel height stays put (0 = off)
+	"maxRows": 30,           // never list more rows than this
+	"wrapRows": 0,           // e.g. 12: lay the list out in side-by-side blocks of 12 rows (menu: UI > Two columns)
+	"columnRows": 12,        // rows per block when Two columns is switched on from the menu and wrapRows is 0
+
+	// ---------------------------------------------------------------- views
+	"viewMode": "expanded",  // "expanded" or "compact" at start (viewKey / menu switch live)
+	"compact": {             // settings that replace the ones in this file while the compact view is on
+		"textSize": 13, "smallTextSize": 11, "nameMaxChars": 10,
+		"columns": { "level": 30, "name": 70, "cost": 40, "vendor": 320 },
+		"badgeStyle": "pill",  // small pills with short labels (see compactLabels); "text" = the same tokens without pills
+		"pillGap": 3, "pillPad": 8,
+		// Short labels used by the compact view, per category id. Change any of them; delete a line to use the
+		// built-in default (mods = star + W/A/P, items = W/A + star, plain gear W/A, then Ap Pl Mo St Md Fd Dr Am Ex Jk Ms).
+		"compactLabels": {
+			"MODS_WEAPON4": "4W", "MODS_ARMOR4": "4A", "MODS_PA4": "4P",
+			"MODS_WEAPON3": "3W", "MODS_ARMOR3": "3A", "MODS_PA3": "3P",
+			"MODS_WEAPON2": "2W", "MODS_ARMOR2": "2A", "MODS_PA2": "2P",
+			"MODS_WEAPON1": "1W", "MODS_ARMOR1": "1A", "MODS_PA1": "1P",
+			"WEAPON4": "W4", "WEAPON3": "W3", "WEAPON2": "W2", "WEAPON1": "W1", "WEAPON0": "W",
+			"ARMOR4": "A4",  "ARMOR3": "A3",  "ARMOR2": "A2",  "ARMOR1": "A1",  "ARMOR0": "A",
+			"APPAREL": "Ap", "PLAN": "Pl", "MODS": "Mo",
+			"STIMPAK": "St", "MEDS": "Md", "FOOD": "Fd", "DRINK": "Dr",
+			"AMMO": "Am", "EXPLOSIVE": "Ex", "JUNK": "Jk", "MISC": "Ms"
+		},
+		"wrapRows": 12,        // two side-by-side blocks of 12 rows
+		"showFilters": false, "showKeys": false
+	},
+
+	// ---------------------------------------------------------------- what is shown
+	"hudModes": ["MapMenu"], // HUD modes the board appears in: All, MapMenu, Pipboy, VATS, PowerArmor, WorkshopMode, ContainerMode ...
+	"allowOverlay": false,   // true: showKey also toggles the board as an overlay outside those modes
+	"showHeader": true,      // SERVER 23/26   FILTER: DEFAULT (USER)   SORT: BEST (player level + shop stock)
+	"headerLabel": "SERVER",
+	"serverCapacity": 24,    // the "/24" in the header (public worlds); private worlds use 8 automatically
+	"showColumnTitles": true,
+	"columnTitles": { "level": "LVL", "name": "PLAYER", "distance": "DIST", "cost": "COST", "vendor": "SHOP" },
+	"showLevel": true,
+	"showCost": true,        // estimated fast-travel caps to the camp ("~" = estimate; "free" for team camps)
+	"showDistance": false,   // raw map distance instead of caps (the "distance" column width then applies)
+	"showDirection": false,  // compass heading after the distance
+	"showLegend": true,      // colour key under the table (menu: UI > Legend)
+	"showFilters": true,     // "Filters:" list under the legend, active preset highlighted (menu: UI > Filter list)
+	"showKeys": true,        // "Hotkeys:" line under that (menu: UI > Hotkeys line)
+	"debug": false,          // diagnostics line under the table (menu: SYSTEM > Debug line)
+	"hudMenu": true,         // VendorBoard entry in the HUDModLoader menu
+	"toastSeconds": 2.5,     // how long the on-screen confirmation of a menu change stays
+	"confirmStyle": "both",  // "toast" = the mod's own pill above the board, "hud" = the game's HUD message stack, "both"
+	"refreshMs": 1000,       // how often the board re-reads the map data while visible
+
+	// caps = round(distance / perUnit), at least min; team camps are free. When you click a camp on the map
+	// the game's real price is read and perUnit self-calibrates from it.
+	"caps": { "perUnit": 84, "min": 1, "freeForTeam": true, "prefix": "", "suffix": "c" },
+	"useFlyoutCost": false,  // read the game's real travel price for the camp selected on the map (experimental, off)
+
+	// Camps you have stood in (within visitedRadius map units) are greyed, or hidden with hideVisited.
+	"hideVisited": false,    // menu: FILTERING > Hide visited
+	"visitedAlpha": 0.6,            // visited rows are faded to this alpha ...
+	"visitedPillColor": "0x6b675e", // ... and their pills drawn in this grey, blended with the category colour
+	"visitedTint": 0.35,            // how much category colour shows through on visited pills (0 = flat grey, 1 = full colour)
+	"visitedRadius": 25,
+
+	"rememberChoices": false, // true: keep menu choices in extender storage across sessions. Leave false with Improved HUD
+	                          // installed - a second storage user in the HUD breaks its F10 settings window.
+
+	// ---------------------------------------------------------------- colours
+	// Row colours by status. remote = everyone without a status (UI off-yellow), local = you (cobalt).
+	"colors": {
+		"header": "0xecc86c", "count": "0x9fd79a", "countFull": "0xff6b6b",
+		"local": "0x3b7bff", "remote": "0xf2f0cc", "friend": "0x7fd1ae",
+		"teamLeader": "0xffb347", "teamMember": "0xffcf80", "wanted": "0xff5252", "hidden": "0xb39ddb",
+		"visited": "0x8f8a74", "distance": "0xc8b98a", "highlight": "0xf6cd60", "status": "0x8fd3e8"
+	},
+
+	// Shop column style: "pill" = coloured rounded badges with dark text, "text" = coloured text only.
+	"badgeStyle": "pill",
+	"pillTextColor": "0x1c1711",
+	"pillAlpha": 0.92,
+	"pillRadius": 7,
+	"pillGap": 5,            // space between pills
+	"pillPad": 14,           // horizontal padding inside a pill
+	"pillWrap": true,        // pills that do not fit the shop column continue on the next line of the row;
+	                         // false folds them into one "+N" pill instead
+	"pillOverflowColor": "0x8a8373", // colour of that "+N" pill and of the "empty shop" / "no shop" pills
+
+	// ---------------------------------------------------------------- score
+	// Interest score = player level / levelScore.divisor (capped) + per category: weight x count, capped at cap.
+	// Drives the row highlight (highlightScore), the BEST sort and the INTERESTING preset (minScore).
+	// Menu: FILTERING > Score (threshold ++/--, category groups and level on/off).
+	"score": {
+		"MODS_WEAPON4": { "weight": 10, "cap": 40 },
+		"MODS_ARMOR4":  { "weight": 10, "cap": 40 },
+		"MODS_PA4":     { "weight": 10, "cap": 40 },
+		"WEAPON4":      { "weight": 4,  "cap": 20 },
+		"ARMOR4":       { "weight": 4,  "cap": 20 },
+		"WEAPON3":      { "weight": 2,  "cap": 10 },
+		"ARMOR3":       { "weight": 2,  "cap": 10 },
+		"APPAREL":      { "weight": 1,  "cap": 8 }
+	},
+	"levelScore": { "divisor": 100, "cap": 10 },   // level 650 -> 6.5 points, level 1000+ -> 10
+	"highlightScore": 6,     // rows at or above this score get the highlight colour
+
+	// ---------------------------------------------------------------- sort presets
+	// Cycled with sortKey and listed in the menu (FILTERING > Sort preset). Keys, tried in order until two
+	// players differ: local (you first), best (score), level, levelAsc, cost (travel caps, free first), distance,
+	// bounty, friend, name, game (the map's World Activity list order: by name, or by time when the game's own
+	// list is set to Recent; players without a vendor entry last). "hint" is shown next to the name in the header.
+	"sortIndex": 0,          // sort preset active at start (index into the list)
+	"sorts": [
+		{ "name": "BEST",       "keys": ["local", "best", "level", "name"], "hint": "player level + shop stock" },
+		{ "name": "LEVEL HIGH", "keys": ["local", "level", "name"] },
+		{ "name": "LEVEL LOW",  "keys": ["local", "levelAsc", "name"] },
+		{ "name": "CLOSEST",    "keys": ["local", "cost", "distance", "name"] },
+		{ "name": "NAME",       "keys": ["local", "name"] },
+		{ "name": "GAME LIST",  "keys": ["local", "game", "name"], "hint": "map activity list order" }
+	],
+
+	// ---------------------------------------------------------------- filter presets
+	// Cycled with presetKey and listed in the menu (FILTERING > Filter preset) and in the "Filters:" line, so
+	// the defaults already cover every vendor category; edit this list only to change the set or the start
+	// view ("preset" below). A preset may also get its own hotkey ("key": "F5").
+	// Rule keys: vendorsOnly, friendsOnly, minScore, anyOf (list of category ids), minCount ({category: n}),
+	// includeEmpty (lists everyone, with "empty shop" / "no shop" pills; the only kind of preset that lists
+	// your own character).
+	// "badges": the pills shown while the preset is active, INSTEAD of the personal "badges" list above.
+	// Such presets are fixed: the menu badge toggles and hide-no-stock never touch them. Presets without
+	// "badges" (DEFAULT (USER), INTERESTING, FRIENDS) use the personal list and follow the menu.
+	// "all" = every vendor category. Category ids as listed above.
+	"preset": 0,             // filter preset active at start (index into the list; 0 = DEFAULT (USER))
+	"presets": [
+		{ "name": "DEFAULT (USER)" },
+		{ "name": "EVERYTHING",          "vendorsOnly": true, "badges": "all" },
+		{ "name": "INTERESTING (BETA)",  "vendorsOnly": true, "minScore": 6 },
+		{ "name": "MODS ONLY",
+		  "anyOf":  ["MODS_WEAPON4", "MODS_ARMOR4", "MODS_PA4", "MODS_WEAPON3", "MODS_ARMOR3", "MODS_PA3", "MODS_WEAPON2", "MODS_ARMOR2", "MODS_PA2", "MODS_WEAPON1", "MODS_ARMOR1", "MODS_PA1", "MODS"],
+		  "badges": ["MODS_WEAPON4", "MODS_ARMOR4", "MODS_PA4", "MODS_WEAPON3", "MODS_ARMOR3", "MODS_PA3", "MODS_WEAPON2", "MODS_ARMOR2", "MODS_PA2", "MODS_WEAPON1", "MODS_ARMOR1", "MODS_PA1", "MODS"] },
+		{ "name": "4-STAR MODS",         "anyOf": ["MODS_WEAPON4", "MODS_ARMOR4", "MODS_PA4"], "badges": ["MODS_WEAPON4", "MODS_ARMOR4", "MODS_PA4"] },
+		{ "name": "WEAPONS & ARMOR",     "anyOf": ["WEAPON4", "ARMOR4", "WEAPON3", "ARMOR3", "WEAPON2", "ARMOR2", "WEAPON1", "ARMOR1", "WEAPON0", "ARMOR0"],
+		  "badges": ["WEAPON4", "ARMOR4", "WEAPON3", "ARMOR3", "WEAPON2", "ARMOR2", "WEAPON1", "ARMOR1", "WEAPON0", "ARMOR0"] },
+		{ "name": "APPAREL",             "anyOf": ["APPAREL"], "badges": ["APPAREL"] },
+		{ "name": "PLAN SHOPS",          "minCount": { "PLAN": 50 }, "badges": ["PLAN"] },
+		{ "name": "AID",                 "anyOf": ["STIMPAK", "MEDS", "FOOD", "DRINK"], "badges": ["STIMPAK", "MEDS", "FOOD", "DRINK"] },
+		{ "name": "AMMO & EXPLOSIVES",   "anyOf": ["AMMO", "EXPLOSIVE"], "badges": ["AMMO", "EXPLOSIVE"] },
+		{ "name": "JUNK & MISC",         "anyOf": ["JUNK", "MISC"], "badges": ["JUNK", "MISC"] },
+		{ "name": "ALL + EMPTY VENDORS", "badges": "all", "includeEmpty": true },
+		{ "name": "FRIENDS",             "friendsOnly": true }
+	]
+}
