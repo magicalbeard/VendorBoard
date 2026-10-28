@@ -92,7 +92,7 @@
 	// Column widths. The panel keeps exactly these widths whatever a filter shows (no size jumps); only the
 	// header can widen it when a long filter name needs more room. Pills past the shop column continue on the
 	// next line of the row (pillWrap). vendorGrow: true lets the shop column widen with content up to vendorMax.
-	"columns": { "level": 40, "name": 130, "distance": 100, "cost": 50, "vendor": 600, "vendorMax": 900 },
+	"columns": { "level": 46, "name": 130, "distance": 100, "cost": 50, "vendor": 600, "vendorMax": 900 },
 	"fixedWidth": true,
 	"vendorGrow": false,
 	"nameMaxChars": 14,      // longer player names are cut with an ellipsis so the name column stays narrow
@@ -105,7 +105,7 @@
 	"viewMode": "expanded",  // "expanded" or "compact" at start (viewKey / menu switch live)
 	"compact": {             // settings that replace the ones in this file while the compact view is on
 		"textSize": 13, "smallTextSize": 11, "nameMaxChars": 10,
-		"columns": { "level": 30, "name": 70, "cost": 40, "vendor": 320 },
+		"columns": { "level": 44, "name": 70, "cost": 40, "vendor": 320 },
 		"badgeStyle": "pill",  // small pills with short labels (see compactLabels); "text" = the same tokens without pills
 		"pillGap": 3, "pillPad": 8,
 		// Short labels used by the compact view, per category id. Change any of them; delete a line to use the
