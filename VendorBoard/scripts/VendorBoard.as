@@ -1283,7 +1283,7 @@ package
             else if(selectItem.indexOf("vb_mv_") == 0)
             {
                this.nudge(selectItem.substr(6));
-               this.toast("position " + int(this.cfg.x) + " / " + int(this.cfg.y));
+               this.toast("position " + int(this.cfg.x) + " / " + int(this.cfg.y) + " (" + this.cornerName() + ")");
             }
             else if(selectItem == "vb_empty")
             {

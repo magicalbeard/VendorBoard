@@ -77,10 +77,13 @@
 	// dock "left" (grows right) or "right" (grows left); anchor "top" (grows down) or "bottom" (grows up).
 	// Docked right, the layout is mirrored (SHOP | COST | PLAYER | LVL, pills growing toward the centre);
 	// "mirror": false keeps the normal column order. Switch both live from the menu (UI > Dock / Anchor).
-	// "positions": where the board sits for each dock/anchor combination, in 16:9 HUD units (0,0 = top-left of
-	// the screen, 1920,1080 = bottom-right). Each entry is the board corner that stays put: topLeft = the board's
-	// top-left corner, bottomRight = its bottom-right corner, and so on. Larger x is always further right, larger y
-	// further down. Nudge live from the menu (UI > Position); that moves the corner currently in use.
+	// "positions": where the board sits, one entry per dock/anchor combination. The numbers are 16:9 HUD units:
+	// x runs 0 (left edge of the screen) to 1920 (right edge), y runs 0 (top) to 1080 (bottom). Each entry places
+	// the corner of the board that stays put while it grows (the defaults are listed next to each entry below).
+	// Larger x is always further right, larger y always further down.
+	// Moving the board in game (UI > Position) moves the entry in use and shows its numbers there, e.g.
+	// "Position 1900 / 960 (bottom right)". That move lasts for the session (or is kept by "rememberChoices");
+	// to make it permanent, copy the two numbers into the matching entry here.
 	// origin "screen": on other aspect ratios each corner keeps its distance from the screen edges it is docked to,
 	// so the same numbers work on 16:9 and ultrawide. origin "stage": raw HUD coordinates (HUDPlayerList
 	// convention: on a 21:9 monitor the left edge is near x = -320 and the right edge near x = 2240).
@@ -97,9 +100,13 @@
 	"anchor": "top",
 	"mirror": true,
 	"positions": {
+		// dock left + anchor top (default): the board's top-left corner, 20 in from the left edge, 200 down from the top
 		"topLeft":     { "x": 20,   "y": 200 },
+		// dock right + anchor top: the board's top-right corner, 20 in from the right edge, 200 down from the top
 		"topRight":    { "x": 1900, "y": 200 },
+		// dock left + anchor bottom: the board's bottom-left corner, 20 in from the left edge, 120 up from the bottom
 		"bottomLeft":  { "x": 20,   "y": 960 },
+		// dock right + anchor bottom: the board's bottom-right corner, 20 in from the right edge, 120 up from the bottom
 		"bottomRight": { "x": 1900, "y": 960 }
 	},
 	"font": "$MAIN_Font_Bold",   // other working fonts: $MAIN_Font, $Futura_Bold, $ConsoleFont, $Terminal_Font
