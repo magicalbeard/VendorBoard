@@ -311,7 +311,6 @@ package
                {"name":"GAME LIST","keys":["local","game","name"],"hint":"map activity list order"}
             ],
             "headerLabel":"SERVER",
-            "serverCapacity":24,
             "showColumnTitles":true,
             "columnTitles":{"level":"LVL","name":"PLAYER","distance":"DIST","cost":"COST","vendor":"SHOP"},
             "showLegend":true,
@@ -650,7 +649,7 @@ package
          var me:Object = null;
          var account:Object = null;
          var charInfo:Object = null;
-         var maxPlayers:int = int(this.cfg.serverCapacity) > 0 ? int(this.cfg.serverCapacity) : 24;
+         var maxPlayers:int = 24;
          var p:Object = null;
          this.dbg.camps = 0;
          this.dbg.campsAll = 0;

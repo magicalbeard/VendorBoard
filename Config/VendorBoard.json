@@ -163,9 +163,8 @@
 	// ---------------------------------------------------------------- what is shown
 	"hudModes": ["MapMenu"], // HUD modes the board appears in: All, MapMenu, Pipboy, VATS, PowerArmor, WorkshopMode, ContainerMode ...
 	"allowOverlay": false,   // true: showKey also toggles the board as an overlay outside those modes
-	"showHeader": true,      // SERVER 23/26   FILTER: DEFAULT (USER)   SORT: BEST (player level + shop stock)
+	"showHeader": true,      // SERVER 23/24   FILTER: DEFAULT (USER)   SORT: BEST (player level + shop stock)
 	"headerLabel": "SERVER",
-	"serverCapacity": 24,    // the "/24" in the header (public worlds); private worlds use 8 automatically
 	"showColumnTitles": true,
 	"columnTitles": { "level": "LVL", "name": "PLAYER", "distance": "DIST", "cost": "COST", "vendor": "SHOP" },
 	"showLevel": true,
@@ -223,7 +222,8 @@
 
 	// ---------------------------------------------------------------- score
 	// Interest score = player level / levelScore.divisor (capped) + per category: weight x count, capped at cap.
-	// Drives the row highlight (highlightScore), the BEST sort and the INTERESTING preset (minScore).
+	// Drives the row highlight (highlightScore), the BEST sort and the INTERESTING preset (its "minScore").
+	// Only the categories listed here count; anything else (3-star mod boxes, plans, ...) adds nothing.
 	// Menu: FILTERING > Score (threshold ++/--, category groups and level on/off).
 	"score": {
 		"MODS_WEAPON4": { "weight": 10, "cap": 40 },
@@ -270,6 +270,9 @@
 	"presets": [
 		{ "name": "DEFAULT (USER)" },
 		{ "name": "EVERYTHING",          "vendorsOnly": true, "badges": "all" },
+		// INTERESTING: vendors whose interest score (SCORE section above) is at least minScore. It has no "badges"
+		// of its own, so it shows the DEFAULT (USER) badges and follows the menu badge toggles. Change "minScore"
+		// here, the weights in "score" / "levelScore" above, or add a "badges" list here to give it its own pills.
 		{ "name": "INTERESTING (BETA)",  "vendorsOnly": true, "minScore": 6 },
 		{ "name": "MODS ONLY",
 		  "anyOf":  ["MODS_WEAPON4", "MODS_ARMOR4", "MODS_PA4", "MODS_WEAPON3", "MODS_ARMOR3", "MODS_PA3", "MODS_WEAPON2", "MODS_ARMOR2", "MODS_PA2", "MODS_WEAPON1", "MODS_ARMOR1", "MODS_PA1", "MODS"],
