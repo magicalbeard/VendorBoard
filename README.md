@@ -12,18 +12,19 @@ Nexus Mods: https://www.nexusmods.com/fallout76/mods/4436
 ## Install
 
 1. Copy `VendorBoard.ba2` into `Data` and add it to `sResourceArchive2List` in `Fallout76Custom.ini`.
-2. Copy `VendorBoard.json` into `Data`. It is re-read every 10 seconds while the game runs.
-3. Add a line `VendorBoard` to `Data\hudmodloader.ini` (`extras/hudmodloader.example.ini` is an example).
+2. Add a line `VendorBoard` to `Data\hudmodloader.ini` (`extras/hudmodloader.example.ini` is an example).
 
-The comments in `Config/VendorBoard.json` describe every setting.
+Settings live in `Data\modsdata\vendorboard.json`, re-read every 10 seconds while the game runs. With xScal the file is created on first start (from an old `Data\VendorBoard.json` if there is one) and the in-game menu saves into it. ZFE only supports the older one-name form of that storage, so with ZFE the menu saves only when no other mod (such as Improved HUD) is using it, and the file is created on the first menu change; otherwise copy `modsdata\vendorboard.example.json` to `modsdata\vendorboard.json` to keep settings. The file is strict JSON; its `//` entries describe every setting.
 
 ## Layout
 
 - `VendorBoard/scripts/VendorBoard.as` - the mod (document class)
 - `VendorBoard/scripts/Shared/`, `Mobile/`, `scaleform/` - Fallout 76 interface classes
+- `VendorBoard/scripts/SettingsJson.as` - settings file reader / writer
 - `VendorBoard/scripts/SharedHUDTools.as` - HUD Mod Loader menu bridge
-- `VendorBoard/scripts/com/adobe/` - as3corelib JSON decoder
-- `Config/VendorBoard.json` - shipped config; `extras/hudmodloader.example.ini` - example loader list
+- `VendorBoard/scripts/com/adobe/` - as3corelib JSON decoder (used by the shared interface classes)
+- `Config/vendorboard.json` - settings template: defaults, notes and layout, compiled into the SWF and shipped as `modsdata/vendorboard.example.json`
+- `extras/hudmodloader.example.ini` - example loader list
 - `build.py`, `tools/ba2pack.py` - build
 
 ## Build

@@ -16,7 +16,6 @@ package
    import Shared.AS3.Data.BSUIDataManager;
    import Shared.AS3.Data.FromClientDataEvent;
    import Shared.GlobalFunc;
-   import com.adobe.serialization.json.JSONDecoder;
    import flash.display.MovieClip;
    import flash.display.Sprite;
    import flash.events.Event;
@@ -39,7 +38,24 @@ package
    public class VendorBoard extends MovieClip
    {
 
-      public static const VERSION:String = "1.2";
+      public static const VERSION:String = "1.3";
+
+      // Data\modsdata\vendorboard.json, through xScal's mod storage
+      private static const STORAGE_NAME:String = "vendorboard";
+
+      // the file before a menu "Reset to defaults"
+      private static const BACKUP_NAME:String = "vendorboard.backup";
+
+      // the same file read directly (no xScal), and the 1.0 - 1.2 config it replaces
+      private static const FILE_URL:String = "../modsdata/vendorboard.json";
+
+      private static const LEGACY_URL:String = "../VendorBoard.json";
+
+      // objects merged key by key into the defaults rather than replaced
+      private static const SUB_MERGE:Object = {"colors":true,"columns":true,"columnTitles":true,"caps":true,"nameTags":true,"badgeStyles":true,"positions":true};
+
+      // menu choices of 1.1 / 1.2 storage that are not settings keys
+      private static const OV_ONLY:Object = {"hidden":true,"perUnit":true,"twoColumns":true,"levelOff":true,"badgeOn":true,"badgeOff":true,"x":true,"y":true};
 
       private var baseCfg:Object = null;
 
@@ -93,13 +109,49 @@ package
 
       private var hudTools:SharedHUDTools = null;
 
+      // menu choices not yet written to the settings file (all of them while choices are session-only)
       private var ov:Object = {};
-
-      private var ovLoaded:Boolean = false;
 
       private var ovDirty:Boolean = false;
 
-      private var storage:Object = null;
+      // the shipped template (Config/vendorboard.json): defaults, notes and key order of the settings file
+      private var tpl:Object = null;
+
+      // template keys that follow a blank line
+      private var tplBreaks:Object = {};
+
+      // the settings file as last read or written
+      private var doc:Object = null;
+
+      // "storage" = xScal mod storage by name (read + write), "legacy" = read directly, written through the
+      // one-name modStorage form (ZFE), "file" = read only, "" = waiting for the extender
+      private var cfgMode:String = "";
+
+      private var cfgWaitUntil:int = 0;
+
+      private var cfgUrl:String = "";
+
+      // the settings file does not parse: keep the last good settings and do not overwrite it
+      private var docBroken:Boolean = false;
+
+      private var migrating:Boolean = false;
+
+      private var migrateOv:Object = null;
+
+      // the HUD's storage object is registered to STORAGE_NAME (ZFE, see saveDoc)
+      private var legacyBound:Boolean = false;
+
+      // a document was read or saved through mod storage this session
+      private var storageWorks:Boolean = false;
+
+      // mod storage refused a save before any worked: read-only for the session
+      private var storageRefused:Boolean = false;
+
+      // a notice from loading the settings, held until the board is first on screen
+      private var pendingNotice:String = null;
+
+      // the "menu changes last for this session" notice was shown
+      private var sessionNoted:Boolean = false;
       
       private var dbg:Object = {};
 
@@ -199,8 +251,10 @@ package
          {
             return;
          }
+         this.loadTemplate();
          this.baseCfg = this.defaultConfig();
          this.cfg = this.buildCfg();
+         this.cfgWaitUntil = getTimer() + 3000;
          try
          {
             this.hudTools = new SharedHUDTools("VendorBoard");
@@ -253,189 +307,433 @@ package
 
       // ------------------------------------------------------------------ config
 
-      private function defaultConfig() : Object
+      private function loadTemplate() : void
       {
-         return {
-            "origin":"screen",
-            "dock":"left",
-            "anchor":"top",
-            "mirror":true,
-            "positions":{"topLeft":{"x":20,"y":200},"topRight":{"x":1900,"y":200},"bottomLeft":{"x":20,"y":960},"bottomRight":{"x":1900,"y":960}},
-            "font":"$MAIN_Font_Bold",
-            "textSize":16,
-            "rowSpacing":0,
-            "textShadow":true,
-            "background":true,
-            "backgroundColor":"0x0b0a08",
-            "backgroundAlpha":0.4,
-            "padding":6,
-            "columns":{"level":46,"name":130,"distance":100,"cost":50,"vendor":600,"vendorMax":900},
-            "vendorGrow":false,
-            "minRows":0,
-            "fixedWidth":true,
-            "showHeader":true,
-            "showKeys":true,
-            "showFilters":true,
-            "viewMode":"expanded",
-            "pillWrap":true,
-            "compact":{
-               "textSize":13,
-               "smallTextSize":11,
-               "nameMaxChars":10,
-               "columns":{"level":44,"name":70,"cost":40,"vendor":320},
-               "badgeStyle":"pill",
-               "pillGap":3,
-               "pillPad":8,
-               "wrapRows":12,
-               "showFilters":false,
-               "showKeys":false
-            },
-            "toastSeconds":2.5,
-            "confirmStyle":"both",
-            "toastPosition":{"x":20,"y":150},
-            "smallTextSize":13,
-            "scaleColumns":true,
-            "hideEmptyShops":true,
-            "hudMenu":true,
-            "rememberChoices":false,
-            "sortIndex":0,
-            "hotkeys":true,
-            "useFlyoutCost":false,
-            "sortKey":"F3",
-            "sorts":[
-               {"name":"BEST","keys":["local","best","level","name"],"hint":"player level + shop stock"},
-               {"name":"LEVEL HIGH","keys":["local","level","name"]},
-               {"name":"LEVEL LOW","keys":["local","levelAsc","name"]},
-               {"name":"CLOSEST","keys":["local","cost","distance","name"]},
-               {"name":"NAME","keys":["local","name"]},
-               {"name":"GAME LIST","keys":["local","game","name"],"hint":"map activity list order"}
-            ],
-            "headerLabel":"SERVER",
-            "showColumnTitles":true,
-            "columnTitles":{"level":"LVL","name":"PLAYER","distance":"DIST","cost":"COST","vendor":"SHOP"},
-            "showLegend":true,
-            "wrapRows":0,
-            "columnRows":12,
-            "showDistance":false,
-            "showDirection":false,
-            "showCost":true,
-            "caps":{"perUnit":84,"min":1,"freeForTeam":true,"prefix":"","suffix":"c"},
-            "showLevel":true,
-            "maxRows":30,
-            "hideVisited":false,
-            "visitedAlpha":0.6,
-            "visitedPillColor":"0x6b675e",
-            "visitedTint":0.35,
-            "visitedRadius":25,
-            "refreshMs":1000,
-            "hudModes":["MapMenu"],
-            "allowOverlay":false,
-            "debug":false,
-            "showKey":"",
-            "viewKey":"F4",
-            "presetKey":"F2",
-            "colors":{
-               "header":"0xecc86c","count":"0x9fd79a","countFull":"0xff6b6b","local":"0x3b7bff","remote":"0xf2f0cc",
-               "friend":"0x7fd1ae","teamLeader":"0xffb347","teamMember":"0xffcf80","wanted":"0xff5252",
-               "visited":"0x8f8a74","distance":"0xc8b98a","highlight":"0xf6cd60","status":"0x8fd3e8"
-            },
-            "badgeStyle":"pill",
-            "pillTextColor":"0x1c1711",
-            "pillAlpha":0.92,
-            "pillRadius":7,
-            "pillGap":5,
-            "pillPad":14,
-            "pillOverflowColor":"0x8a8373",
-            "badges":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4","MODS_WEAPON3","MODS_ARMOR3","MODS_PA3","WEAPON4","ARMOR4","WEAPON3","ARMOR3","PLAN","APPAREL","MODS"],
-            "badgeStyles":{},
-            "score":{
-               "MODS_WEAPON4":{"weight":10,"cap":40},"MODS_ARMOR4":{"weight":10,"cap":40},"MODS_PA4":{"weight":10,"cap":40},
-               "WEAPON4":{"weight":4,"cap":20},"ARMOR4":{"weight":4,"cap":20},
-               "WEAPON3":{"weight":2,"cap":10},"ARMOR3":{"weight":2,"cap":10},
-               "APPAREL":{"weight":1,"cap":8}
-            },
-            "levelScore":{"divisor":100,"cap":10},
-            "highlightScore":6,
-            "presets":[
-               {"name":"DEFAULT (USER)"},
-               {"name":"EVERYTHING","vendorsOnly":true,"badges":"all"},
-               {"name":"INTERESTING (BETA)","minScore":6,"vendorsOnly":true},
-               {"name":"MODS ONLY","anyOf":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4","MODS_WEAPON3","MODS_ARMOR3","MODS_PA3","MODS_WEAPON2","MODS_ARMOR2","MODS_PA2","MODS_WEAPON1","MODS_ARMOR1","MODS_PA1","MODS"],"badges":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4","MODS_WEAPON3","MODS_ARMOR3","MODS_PA3","MODS_WEAPON2","MODS_ARMOR2","MODS_PA2","MODS_WEAPON1","MODS_ARMOR1","MODS_PA1","MODS"]},
-               {"name":"4-STAR MODS","anyOf":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4"],"badges":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4"]},
-               {"name":"WEAPONS & ARMOR","anyOf":["WEAPON4","ARMOR4","WEAPON3","ARMOR3","WEAPON2","ARMOR2","WEAPON1","ARMOR1","WEAPON0","ARMOR0"],"badges":["WEAPON4","ARMOR4","WEAPON3","ARMOR3","WEAPON2","ARMOR2","WEAPON1","ARMOR1","WEAPON0","ARMOR0"]},
-               {"name":"APPAREL","anyOf":["APPAREL"],"badges":["APPAREL"]},
-               {"name":"PLAN SHOPS","minCount":{"PLAN":50},"badges":["PLAN"]},
-               {"name":"AID","anyOf":["STIMPAK","MEDS","FOOD","DRINK"],"badges":["STIMPAK","MEDS","FOOD","DRINK"]},
-               {"name":"AMMO & EXPLOSIVES","anyOf":["AMMO","EXPLOSIVE"],"badges":["AMMO","EXPLOSIVE"]},
-               {"name":"JUNK & MISC","anyOf":["JUNK","MISC"],"badges":["JUNK","MISC"]},
-               {"name":"ALL + EMPTY VENDORS","badges":"all","includeEmpty":true},
-               {"name":"FRIENDS","friendsOnly":true}
-            ],
-            "nameMaxChars":14,
-            "nameFormat":"{name}{bounty}{friend}",
-            "nameTags":{"friend":" [F]","bounty":" ({caps}c)","leader":"","member":"","wanted":""},
-            "preset":0
-         };
+         // SettingsTemplate is generated by build.py from Config/vendorboard.json (Scaleform does not load
+         // binary data embedded in a SWF, so the text goes in as a string constant)
+         var text:String = SettingsTemplate.TEXT;
+         var lines:Array = text.split("\n");
+         var blank:Boolean = false;
+         var m:Object = null;
+         var i:int = 0;
+         while(i < lines.length)
+         {
+            if(/^\s*$/.test(lines[i]))
+            {
+               blank = true;
+            }
+            else
+            {
+               m = /^  "([^"]+)":/.exec(lines[i]);
+               if(m != null && blank)
+               {
+                  this.tplBreaks[m[1]] = true;
+               }
+               blank = false;
+            }
+            i++;
+         }
+         this.tpl = SettingsJson.parse(text,false);
       }
 
-      private function loadConfig() : void
+      // built-in defaults = the template's values without its notes
+      private function defaultConfig() : Object
       {
+         var out:Object = deepCopy(this.tpl);
+         var k:String = null;
+         for(k in out)
+         {
+            if(k.indexOf("//") == 0 || k == "version")
+            {
+               delete out[k];
+            }
+         }
+         return out;
+      }
+
+      private static function deepCopy(v:*) : *
+      {
+         var out:* = null;
+         var k:String = null;
+         var i:int = 0;
+         if(v is Array)
+         {
+            out = [];
+            while(i < v.length)
+            {
+               out.push(deepCopy(v[i]));
+               i++;
+            }
+            return out;
+         }
+         if(isObj(v))
+         {
+            out = {};
+            for(k in v)
+            {
+               out[k] = deepCopy(v[k]);
+            }
+            if(SettingsJson.ORDER[v] != null)
+            {
+               SettingsJson.ORDER[out] = (SettingsJson.ORDER[v] as Array).concat();
+            }
+            return out;
+         }
+         return v;
+      }
+
+      private static function isObj(v:*) : Boolean
+      {
+         return v != null && typeof v == "object" && !(v is Array);
+      }
+
+      // settings from src over target: notes and "version" skipped, SUB_MERGE objects key by key,
+      // 1.0 / 1.1 top-level x / y turned into "positions"
+      private function mergeSettings(target:Object, src:Object) : void
+      {
+         var key:String = null;
+         var sub:String = null;
+         for(key in src)
+         {
+            if(key.indexOf("//") == 0 || key == "version" || key == "x" || key == "y")
+            {
+               continue;
+            }
+            if(SUB_MERGE[key] === true && isObj(src[key]) && isObj(target[key]))
+            {
+               for(sub in src[key])
+               {
+                  target[key][sub] = src[key][sub];
+               }
+            }
+            else
+            {
+               target[key] = src[key];
+            }
+         }
+         if(src.positions == null && (src.x != null || src.y != null))
+         {
+            this.legacyPositions(target,src.x != null ? Number(src.x) : 20,src.y != null ? Number(src.y) : 200);
+         }
+      }
+
+      private function modStorage() : Object
+      {
+         var a:Object = this.xscalApi();
+         if(this.storageRefused)
+         {
+            return null;
+         }
          try
          {
-            this.cfgLoader.load(new URLRequest("../VendorBoard.json"));
+            return a != null && a.modStorage != null ? a.modStorage : null;
+         }
+         catch(err:Error)
+         {
+         }
+         return null;
+      }
+
+      // Settings live in Data\modsdata\vendorboard.json. With xScal it is read and written through mod
+      // storage; without it (ZFE) it is read directly and menu changes last for the session.
+      private function loadConfig() : void
+      {
+         var ms:Object = this.modStorage();
+         if(ms != null && (this.cfgMode == "" || this.cfgMode == "file"))
+         {
+            // xScal reads and saves by name. Other extenders offering modStorage (ZFE) only have the older
+            // one-name-per-HUD form: read the file directly, save through register() when the player changes
+            // something (see saveDoc)
+            this.cfgMode = this.extRuntime() == "xScal" ? "storage" : "legacy";
+         }
+         if(this.cfgMode == "storage")
+         {
+            if(ms != null)
+            {
+               this.loadFromStorage(ms);
+            }
+            return;
+         }
+         if(this.cfgMode == "" && getTimer() < this.cfgWaitUntil)
+         {
+            // the extender may still be starting
+            return;
+         }
+         if(this.cfgMode == "")
+         {
+            this.cfgMode = "file";
+         }
+         this.loadUrl(FILE_URL);
+      }
+
+      // "xScal", "ZFE", ... or "" when the extender does not say
+      private function extRuntime() : String
+      {
+         var a:Object = this.xscalApi();
+         var info:* = null;
+         if(a == null)
+         {
+            return "";
+         }
+         try
+         {
+            if(a.version != null && a.version.runtime != null)
+            {
+               return String(a.version.runtime);
+            }
+         }
+         catch(err:Error)
+         {
+         }
+         try
+         {
+            info = SettingsJson.parse(String(a.call("GetXSRuntimeInfo")),false);
+            if(isObj(info) && info.runtime != null)
+            {
+               return String(info.runtime);
+            }
+         }
+         catch(err2:Error)
+         {
+         }
+         return "";
+      }
+
+      private function loadUrl(url:String) : void
+      {
+         this.cfgUrl = url;
+         try
+         {
+            this.cfgLoader.load(new URLRequest(url));
          }
          catch(err:Error)
          {
          }
       }
 
-      private function onConfigError(e:Event) : void
+      private function loadFromStorage(ms:Object) : void
       {
-         this.lastError = "no VendorBoard.json (using defaults)";
+         var stored:* = null;
+         var text:String = null;
+         var parsed:* = null;
+         if(this.migrating)
+         {
+            return;
+         }
+         try
+         {
+            stored = ms.load(STORAGE_NAME);
+         }
+         catch(err:Error)
+         {
+            this.lastError = "storage: " + err.message;
+            return;
+         }
+         if(stored === false || stored == null)
+         {
+            // missing, or a file xScal will not read (bad JSON): read it directly to tell which
+            this.loadUrl(FILE_URL);
+            return;
+         }
+         text = String(stored);
+         this.storageWorks = true;
+         if(text == this.cfgText)
+         {
+            return;
+         }
+         this.cfgText = text;
+         try
+         {
+            parsed = SettingsJson.parse(text,false);
+         }
+         catch(err2:Error)
+         {
+            this.fileError(err2.message);
+            return;
+         }
+         if(!isObj(parsed))
+         {
+            this.fileError("the file must start with {");
+            return;
+         }
+         if(parsed.version == null)
+         {
+            // the menu choices 1.1 / 1.2 kept under this name
+            this.startMigration(parsed);
+            return;
+         }
+         this.docBroken = false;
+         this.applyDoc(parsed);
+         if(String(parsed.version) != VERSION)
+         {
+            this.saveDoc();
+         }
       }
 
       private function onConfigLoaded(e:Event) : void
       {
          var text:String = String(e.target.data);
-         var parsed:Object = null;
-         var key:String = null;
+         var legacy:Boolean = this.cfgUrl == LEGACY_URL;
+         var parsed:* = null;
+         if(legacy && this.migrating)
+         {
+            this.finishMigration(text);
+            return;
+         }
          if(text == this.cfgText)
          {
             return;
          }
+         this.cfgText = text;
          try
          {
-            parsed = new JSONDecoder(text,false).getValue();
+            parsed = SettingsJson.parse(text,legacy);
          }
          catch(err:Error)
          {
-            this.lastError = "config parse: " + err.message;
+            this.fileError((legacy ? "(old Data\\VendorBoard.json) " : "") + err.message);
             return;
          }
-         if(parsed == null)
+         if(!isObj(parsed))
          {
+            this.fileError("the file must start with {");
             return;
          }
-         this.cfgText = text;
-         var merged:Object = this.defaultConfig();
-         for(key in parsed)
+         this.docBroken = false;
+         if(legacy)
          {
-            if((key == "colors" || key == "columns" || key == "columnTitles" || key == "caps" || key == "nameTags" || key == "badgeStyles" || key == "positions") && parsed[key] != null)
+            this.applyDoc(this.fromLegacy(parsed));
+            this.lastError = "using the old Data\\VendorBoard.json; move it to Data\\modsdata\\vendorboard.json";
+         }
+         else
+         {
+            this.applyDoc(parsed);
+         }
+      }
+
+      // the old Data\VendorBoard.json as a settings document: over the defaults, x / y turned into
+      // "positions", keys this version no longer has (e.g. serverCapacity) dropped
+      private function fromLegacy(legacy:Object) : Object
+      {
+         var d:Object = this.defaultConfig();
+         var k:String = null;
+         this.mergeSettings(d,legacy);
+         for(k in d)
+         {
+            if(!this.tpl.hasOwnProperty(k))
             {
-               for(var sub:String in parsed[key])
+               delete d[k];
+            }
+         }
+         return d;
+      }
+
+      private function onConfigError(e:Event) : void
+      {
+         if(this.migrating)
+         {
+            this.finishMigration(null);
+         }
+         else if(this.cfgMode == "storage")
+         {
+            this.startMigration(null);
+         }
+         else if(this.cfgUrl == FILE_URL)
+         {
+            this.loadUrl(LEGACY_URL);
+         }
+         else
+         {
+            if(this.doc == null)
+            {
+               // defaults, so a first menu change can create the file (ZFE)
+               this.applyDoc(this.defaultConfig());
+            }
+            this.lastError = "no Data\\modsdata\\vendorboard.json (using defaults)";
+         }
+      }
+
+      // shown now when the board is on screen, else when it next is (settings load before the HUD is up)
+      private function notice(message:String) : void
+      {
+         if(this.isVisibleNow())
+         {
+            this.toast(message);
+         }
+         else
+         {
+            this.pendingNotice = message;
+         }
+      }
+
+      private function fileError(msg:String) : void
+      {
+         this.docBroken = true;
+         this.lastError = "vendorboard.json: " + msg;
+         this.notice("vendorboard.json has an error: " + msg);
+      }
+
+      // first run with xScal: build the settings file from the old Data\VendorBoard.json and the menu
+      // choices 1.1 / 1.2 kept in storage
+      private function startMigration(oldOv:Object) : void
+      {
+         this.migrating = true;
+         this.migrateOv = oldOv;
+         this.loadUrl(LEGACY_URL);
+      }
+
+      private function finishMigration(text:String) : void
+      {
+         var d:Object = this.defaultConfig();
+         var legacy:Object = null;
+         var k:String = null;
+         this.migrating = false;
+         if(text != null)
+         {
+            try
+            {
+               legacy = SettingsJson.parse(text,true);
+            }
+            catch(err:Error)
+            {
+               legacy = null;
+               this.lastError = "old Data\\VendorBoard.json not moved: " + err.message;
+            }
+         }
+         if(isObj(legacy))
+         {
+            d = this.fromLegacy(legacy);
+         }
+         if(this.migrateOv != null)
+         {
+            for(k in this.migrateOv)
+            {
+               if(OV_ONLY[k] === true || /^(x_|y_|off_)/.test(k))
                {
-                  merged[key][sub] = parsed[key][sub];
+                  this.ov[k] = this.migrateOv[k];
+               }
+               else
+               {
+                  d[k] = this.migrateOv[k];
                }
             }
-            else
-            {
-               merged[key] = parsed[key];
-            }
+            this.migrateOv = null;
          }
-         if(parsed.positions == null && (parsed.x != null || parsed.y != null))
+         this.docBroken = false;
+         this.applyDoc(d);
+         this.foldOverrides();
+         this.applyDoc(d);
+         if(this.saveDoc())
          {
-            this.legacyPositions(merged,parsed.x != null ? Number(parsed.x) : 20,parsed.y != null ? Number(parsed.y) : 200);
+            this.notice(isObj(legacy) ? "settings moved to Data\\modsdata\\vendorboard.json (Data\\VendorBoard.json can be deleted)" : "settings file created: Data\\modsdata\\vendorboard.json");
          }
+      }
+
+      private function applyDoc(d:Object) : void
+      {
+         var merged:Object = this.defaultConfig();
+         this.doc = d;
+         this.mergeSettings(merged,d);
          this.baseCfg = merged;
          this.cfg = this.buildCfg();
          this.presetIndex = int(merged.preset);
@@ -444,6 +742,230 @@ package
          this.applyOverrides();
          this.applyTimers();
          this.render();
+      }
+
+      private function saveDoc() : Boolean
+      {
+         var ms:Object = this.modStorage();
+         var text:String = null;
+         var ok:Boolean = false;
+         if(ms == null || this.doc == null)
+         {
+            return false;
+         }
+         try
+         {
+            text = SettingsJson.writeDoc(this.doc,this.tpl,this.tplBreaks,VERSION);
+            if(this.cfgMode == "legacy")
+            {
+               // register() ties the HUD's one storage object to a single name for the session. It is only
+               // called here, on a change the player made, so a mod that claims it while loading (Improved
+               // HUD) keeps it; then register() fails and nothing is written.
+               if(!this.legacyBound && !Boolean(ms.register(STORAGE_NAME)))
+               {
+                  this.saveRefused("ZFE storage is in use by another mod - try switching to xScal for persistent storage");
+                  return false;
+               }
+               this.legacyBound = true;
+               ok = Boolean(ms.save(text));
+            }
+            else
+            {
+               ok = Boolean(ms.save(STORAGE_NAME,text));
+            }
+            if(ok)
+            {
+               this.storageWorks = true;
+               this.doc.version = VERSION;
+               this.cfgText = text;
+               return true;
+            }
+            this.saveRefused(this.cfgMode == "legacy" ? "ZFE refused the file - try switching to xScal for persistent storage" : "xScal refused the file, or it is not installed");
+         }
+         catch(err:Error)
+         {
+            this.lastError = "settings save: " + err.message;
+         }
+         return false;
+      }
+
+      // a save refused before any save worked this session: treat the file as read-only until restart
+      private function saveRefused(reason:String) : void
+      {
+         this.lastError = "settings not saved: " + reason;
+         if(!this.storageWorks)
+         {
+            this.storageRefused = true;
+            this.cfgMode = "file";
+            this.sessionNoted = true;
+            this.notice("menu changes last for this session (" + reason + ")");
+         }
+      }
+
+      // writes the pending menu choices into doc; false when there was nothing to write
+      private function foldOverrides() : Boolean
+      {
+         var d:Object = this.doc;
+         var k:String = null;
+         var g:String = null;
+         var c:String = null;
+         var i:int = 0;
+         var list:Array = null;
+         var badges:Array = null;
+         var changed:Boolean = false;
+         var simple:Array = ["highlightScore","dock","anchor","hideEmptyShops","hideVisited","debug"];
+         var perView:Array = ["textSize","smallTextSize","showLegend","showFilters","showKeys"];
+         if(d == null)
+         {
+            return false;
+         }
+         for(k in this.ov)
+         {
+            if(k != "hidden")
+            {
+               changed = true;
+            }
+         }
+         if(!changed)
+         {
+            return false;
+         }
+         while(i < simple.length)
+         {
+            if(this.ov[simple[i]] != null)
+            {
+               d[simple[i]] = this.cfg[simple[i]];
+            }
+            i++;
+         }
+         i = 0;
+         while(i < perView.length)
+         {
+            if(this.ov[perView[i]] != null)
+            {
+               this.viewTarget(d,perView[i])[perView[i]] = this.cfg[perView[i]];
+            }
+            i++;
+         }
+         if(this.ov.twoColumns != null)
+         {
+            this.viewTarget(d,"wrapRows").wrapRows = int(this.cfg.wrapRows);
+         }
+         if(this.ov.preset != null)
+         {
+            d.preset = this.presetIndex;
+         }
+         if(this.ov.sortIndex != null)
+         {
+            d.sortIndex = this.sortIndex;
+         }
+         if(this.ov.viewMode != null)
+         {
+            d.viewMode = String(this.ov.viewMode);
+         }
+         for(k in this.ov)
+         {
+            if(/^[xy]_/.test(k))
+            {
+               c = k.substr(2);
+               if(!isObj(d.positions))
+               {
+                  d.positions = {};
+               }
+               if(!isObj(d.positions[c]))
+               {
+                  d.positions[c] = {};
+               }
+               d.positions[c][k.charAt(0)] = Number(this.ov[k]);
+            }
+         }
+         if(this.ov.perUnit != null)
+         {
+            if(!isObj(d.caps))
+            {
+               d.caps = {};
+            }
+            d.caps.perUnit = Number(this.ov.perUnit);
+         }
+         if(this.ov.badgeOn != null || this.ov.badgeOff != null)
+         {
+            badges = this.userBadges();
+            list = [];
+            i = 0;
+            while(i < badges.length)
+            {
+               list.push(String(badges[i].id));
+               i++;
+            }
+            d.badges = list;
+         }
+         list = this.scoreOff("level") ? ["level"] : [];
+         for(g in SCORE_GROUPS)
+         {
+            if(this.scoreOff(g))
+            {
+               list.push(g);
+            }
+         }
+         d.scoreOff = list;
+         this.ov = this.ov.hidden != null ? {"hidden":this.ov.hidden} : {};
+         return true;
+      }
+
+      // where a menu change of a view-dependent setting goes: the "compact" block while that view is on
+      // and it sets the key, else the top level
+      private function viewTarget(d:Object, key:String) : Object
+      {
+         if(this.viewMode() == "compact" && isObj(d.compact) && d.compact.hasOwnProperty(key))
+         {
+            return d.compact;
+         }
+         return d;
+      }
+
+      // every setting back to the template's defaults; with xScal the file is rewritten after the old one is
+      // saved as vendorboard.backup.json (a file that does not parse cannot be backed up, so it is left alone)
+      private function resetToDefaults() : void
+      {
+         var mode:String = this.cfgMode;
+         var ms:Object = mode == "storage" || mode == "legacy" ? this.modStorage() : null;
+         if(ms != null)
+         {
+            if(this.docBroken)
+            {
+               this.toast("not reset: vendorboard.json has an error - fix it or delete the file");
+               return;
+            }
+            try
+            {
+               // the one-name form (ZFE) cannot write a second file, so no backup there
+               if(mode == "storage" && this.cfgText.length > 0 && !Boolean(ms.save(BACKUP_NAME,this.cfgText)))
+               {
+                  if(this.storageWorks)
+                  {
+                     this.toast("not reset: the backup could not be written");
+                     return;
+                  }
+                  this.saveRefused("xScal refused the file, or it is not installed");
+                  ms = null;
+               }
+            }
+            catch(err:Error)
+            {
+               this.toast("not reset: " + err.message);
+               return;
+            }
+         }
+         this.ov = {};
+         this.applyDoc(this.defaultConfig());
+         if(ms != null && this.saveDoc())
+         {
+            this.toast(mode == "storage" ? "settings reset to defaults (old file: Data\\modsdata\\vendorboard.backup.json)" : "settings reset to defaults");
+         }
+         else
+         {
+            this.toast("settings reset to defaults for this session");
+         }
       }
 
       private function onConfigTick(e:TimerEvent) : void
@@ -625,9 +1147,18 @@ package
 
       private function onRefresh(e:TimerEvent) : void
       {
+         if(this.cfgMode == "")
+         {
+            this.loadConfig();
+         }
          this.storageTick();
          if(this.isVisibleNow())
          {
+            if(this.pendingNotice != null)
+            {
+               this.toast(this.pendingNotice);
+               this.pendingNotice = null;
+            }
             this.render();
          }
          else
@@ -852,7 +1383,7 @@ package
             sorted = this.calib.concat();
             sorted.sort(Array.NUMERIC);
             med = Number(sorted[int(sorted.length / 2)]);
-            if(this.ov.perUnit == null || Math.abs(Number(this.ov.perUnit) - med) >= 1)
+            if(Math.abs((this.ov.perUnit != null ? Number(this.ov.perUnit) : Number(this.cfg.caps != null ? this.cfg.caps.perUnit : 0)) - med) >= 1)
             {
                this.ov.perUnit = Math.round(med * 10) / 10;
                this.ovDirty = true;
@@ -1181,7 +1712,7 @@ package
                this.hudTools.AddMenuItem("vb_hdr_ui",HDR_L + "UI" + HDR_R,false,false,0);
                // --- SYSTEM (top)
                this.hudTools.AddMenuItem("vb_debug","Debug line: " + (this.cfg.debug === true ? "ON" : "OFF"),true,false,250);
-               this.hudTools.AddMenuItem("vb_reload","Reload config (forget menu choices)",true,false,250);
+               this.hudTools.AddMenuItem("vb_reset","Reset to defaults",true,false,250);
                this.hudTools.AddMenuItem("vb_hdr_system",HDR_L + "SYSTEM" + HDR_R,false,false,0);
             }
             else if(parentItem == "vb_filter")
@@ -1201,7 +1732,7 @@ package
                this.hudTools.AddMenuItem("vb_sg_items4","Count 4" + STAR + " items: " + (this.groupOn("items4") ? "ON" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_sg_items3","Count 3" + STAR + " items: " + (this.groupOn("items3") ? "ON" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_sg_apparel","Count apparel: " + (this.groupOn("apparel") ? "ON" : "OFF"),true,false,250);
-               this.hudTools.AddMenuItem("vb_sg_level","Count player level: " + (this.ov.levelOff === true ? "OFF" : "ON"),true,false,250);
+               this.hudTools.AddMenuItem("vb_sg_level","Count player level: " + (this.scoreOff("level") ? "OFF" : "ON"),true,false,250);
             }
             else if(CATEGORY_GROUP[parentItem] != null)
             {
@@ -1232,7 +1763,7 @@ package
                this.hudTools.AddMenuItem("vb_mv_r","Move right 10",true,false,250);
                this.hudTools.AddMenuItem("vb_mv_U","Move up 50",true,false,250);
                this.hudTools.AddMenuItem("vb_mv_D","Move down 50",true,false,250);
-               this.hudTools.AddMenuItem("vb_mv_0","Reset position to json",true,false,250);
+               this.hudTools.AddMenuItem("vb_mv_0","Reset position to default",true,false,250);
             }
             else if(parentItem == "vb_sort")
             {
@@ -1307,7 +1838,7 @@ package
             else if(selectItem.indexOf("vb_sg_") == 0)
             {
                this.toggleGroup(selectItem.substr(6));
-               this.toast("score " + selectItem.substr(6) + " " + (selectItem.substr(6) == "level" ? (this.ov.levelOff === true ? "OFF" : "ON") : (this.groupOn(selectItem.substr(6)) ? "ON" : "OFF")));
+               this.toast("score " + selectItem.substr(6) + " " + (selectItem.substr(6) == "level" ? (this.scoreOff("level") ? "OFF" : "ON") : (this.groupOn(selectItem.substr(6)) ? "ON" : "OFF")));
             }
             else if(selectItem == "vb_visited")
             {
@@ -1361,11 +1892,9 @@ package
                this.ov.showKeys = this.cfg.showKeys;
                this.toast("hotkeys line " + (this.cfg.showKeys === true ? "ON" : "OFF"));
             }
-            else if(selectItem == "vb_reload")
+            else if(selectItem == "vb_reset")
             {
-               this.ov = {};
-               this.cfgText = "";
-               this.loadConfig();
+               this.resetToDefaults();
             }
             else
             {
@@ -1382,21 +1911,26 @@ package
 
       private function groupOn(group:String) : Boolean
       {
-         return this.ov["off_" + group] !== true;
+         return !this.scoreOff(group);
+      }
+
+      // a score group switched off: by a menu choice not yet saved, else by "scoreOff" in the settings
+      private function scoreOff(group:String) : Boolean
+      {
+         var k:String = group == "level" ? "levelOff" : "off_" + group;
+         var list:Array = this.baseCfg != null ? this.baseCfg.scoreOff as Array : null;
+         if(this.ov[k] != null)
+         {
+            return this.ov[k] === true;
+         }
+         return list != null && list.indexOf(group) >= 0;
       }
 
       private function toggleGroup(group:String) : void
       {
-         if(group == "level")
-         {
-            this.ov.levelOff = this.ov.levelOff !== true;
-         }
-         else
-         {
-            this.ov["off_" + group] = this.ov["off_" + group] !== true;
-         }
-         this.cfgText = "";
-         this.loadConfig();
+         this.ov[group == "level" ? "levelOff" : "off_" + group] = !this.scoreOff(group);
+         this.ovDirty = true;
+         this.applyOverrides();
       }
 
       private function nudge(dir:String) : void
@@ -1404,10 +1938,10 @@ package
          var c:String = this.corner();
          if(dir == "0")
          {
-            delete this.ov["x_" + c];
-            delete this.ov["y_" + c];
-            this.cfgText = "";
-            this.loadConfig();
+            this.ov["x_" + c] = Number(this.tpl.positions[c].x);
+            this.ov["y_" + c] = Number(this.tpl.positions[c].y);
+            this.ovDirty = true;
+            this.applyOverrides();
             return;
          }
          var dx:Number = dir == "l" ? -10 : (dir == "r" ? 10 : 0);
@@ -1429,11 +1963,11 @@ package
          return (this.cfg.anchor == "bottom" ? "bottom " : "top ") + (this.cfg.dock == "right" ? "right" : "left");
       }
 
-      // cfg.x / cfg.y = the active corner's position: "positions" from the json, then the session's menu nudges
+      // cfg.x / cfg.y = the active corner's position: "positions" from the settings, then unsaved menu moves
       private function resolvePosition() : void
       {
          var c:String = this.corner();
-         var d:Object = this.defaultConfig().positions[c];
+         var d:Object = this.tpl.positions[c];
          var p:Object = this.cfg.positions != null ? this.cfg.positions[c] : null;
          this.cfg.x = p != null && p.x != null ? Number(p.x) : Number(d.x);
          this.cfg.y = p != null && p.y != null ? Number(p.y) : Number(d.y);
@@ -1703,7 +2237,7 @@ package
          var op:String = item.charAt(item.length - 1);
          var key:String = small ? "smallTextSize" : "textSize";
          var cur:int = int(this.cfg[key]);
-         var defaults:Object = this.defaultConfig();
+         var defaults:Object = this.tpl;
          if(op == "0")
          {
             // the mod's built-in default for the view on screen (16/13 expanded, 13/11 compact)
@@ -1762,13 +2296,13 @@ package
          }
          this.resolvePosition();
          this.badgeList = null;
-         if(this.ov.levelOff === true)
+         if(this.scoreOff("level"))
          {
             this.cfg.levelScore = null;
          }
          for(g in SCORE_GROUPS)
          {
-            if(this.ov["off_" + g] === true && this.cfg.score != null)
+            if(this.scoreOff(g) && this.cfg.score != null)
             {
                ids = SCORE_GROUPS[g] as Array;
                i = 0;
@@ -1829,82 +2363,50 @@ package
          }
       }
 
-      private function encodeOverrides() : String
-      {
-         return this.encodeObj(this.ov,0);
-      }
-
-      private function encodeObj(o:Object, depth:int) : String
-      {
-         var k:String = null;
-         var v:* = undefined;
-         var parts:Array = [];
-         for(k in o)
-         {
-            v = o[k];
-            if(v is String)
-            {
-               parts.push("\"" + k + "\":\"" + String(v).replace(/"/g,"") + "\"");
-            }
-            else if(v is Number || v is Boolean)
-            {
-               parts.push("\"" + k + "\":" + String(v));
-            }
-            else if(v != null && !(v is Array) && depth < 2)
-            {
-               parts.push("\"" + k + "\":" + this.encodeObj(v,depth + 1));
-            }
-         }
-         return "{" + parts.join(",") + "}";
-      }
-
+      // menu changes go into the settings file within a second, when choices are remembered and xScal
+      // can write; otherwise they stay in ov for the session
       private function storageTick() : void
       {
-         var a:Object = this.xscalApi();
-         var stored:* = null;
-         var parsed:Object = null;
-         if(a == null || this.cfg.rememberChoices !== true)
+         var k:String = null;
+         if(!this.ovDirty || this.cfgMode == "" || this.migrating)
          {
-            this.ovDirty = false;
+            // nothing new, or the settings file is not read yet: try again next tick
             return;
          }
-         try
+         if((this.cfgMode == "storage" || this.cfgMode == "legacy") && this.cfg.rememberChoices === true)
          {
-            if(a.modStorage == null)
+            if(this.docBroken)
+            {
+               this.ovDirty = false;
+               this.toast("not saved: vendorboard.json has an error (see the debug line)");
+               return;
+            }
+            if(this.doc == null)
             {
                return;
             }
-            this.storage = a.modStorage;
-            if(!this.ovLoaded)
+            this.ovDirty = false;
+            if(this.foldOverrides())
             {
-               this.ovLoaded = true;
-               if(!Boolean(this.storage.register("vendorboard")))
-               {
-                  return;
-               }
-               stored = this.storage.load();
-               if(stored !== false && stored != null && String(stored).length > 1)
-               {
-                  parsed = new JSONDecoder(String(stored),true).getValue();
-                  if(parsed != null)
-                  {
-                     this.ov = parsed;
-                     this.applyOverrides();
-                  }
-               }
+               this.applyDoc(this.doc);
+               this.saveDoc();
             }
-            if(this.ovDirty)
-            {
-               this.ovDirty = false;
-               if(Boolean(this.storage.register("vendorboard")))
-               {
-                  this.storage.save(this.encodeOverrides());
-               }
-            }
+            return;
          }
-         catch(err:Error)
+         this.ovDirty = false;
+         if(this.sessionNoted)
          {
-            this.lastError = "storage: " + err.message;
+            return;
+         }
+         for(k in this.ov)
+         {
+            // a menu or hotkey choice (not the travel-cost calibration or the hidden state)
+            if(k != "perUnit" && k != "hidden")
+            {
+               this.sessionNoted = true;
+               this.toast(this.cfgMode == "storage" ? "menu changes last for this session (rememberChoices is off)" : "menu changes last for this session (saving needs xScal or ZFE)");
+               return;
+            }
          }
       }
 
@@ -2907,6 +3409,7 @@ package
             s += " act{" + d.actKeys + "}";
          }
          s += " hudSent=" + this.hudSent + " hudPending=" + this.hudPending.length + (this.hudTools != null && this.hudTools.isActive ? " menuOpen" : "");
+         s += " cfg=" + this.cfgMode + (this.docBroken ? "(error)" : "");
          return s;
       }
 
