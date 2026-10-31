@@ -8,7 +8,7 @@
 	// ================================================================ DEFAULT (USER) FILTER - EDIT THIS
 	// This is YOUR view: the F2 preset the board starts on. It lists the categories below and nothing else.
 	// Menu changes (FILTERING > Badges) only last for the session, so make your lasting choices here.
-	// This list only decides WHICH pills appear; how each one looks (label, colour) is set once for every
+	// This list only decides WHICH pills appear; how each one looks (label, color) is set once for every
 	// preset in BADGE STYLES below. Pills always draw mods, weapons, armor, apparel, plans, aid, ammo,
 	// junk/misc, higher stars first, whatever the order here.
 	"badges": [
@@ -21,13 +21,13 @@
 		// AMMO, EXPLOSIVE, JUNK, MISC
 	],
 	// Rows with nothing to show in this view (no shop, or a shop with none of the pills above) are hidden.
-	// false shows them with a grey "empty shop" / "no shop" pill. Fixed category presets always hide them;
+	// false shows them with a gray "empty shop" / "no shop" pill. Fixed category presets always hide them;
 	// ALL + EMPTY VENDORS never does. (menu: FILTERING > Hide rows with no stock)
 	"hideEmptyShops": true,
 	// ================================================================ end of DEFAULT (USER) FILTER
 
 	// ---------------------------------------------------------------- badge styles (all presets)
-	// Label and colour of every category's pill, used by EVERY preset, the legend and greyed visited rows.
+	// Label and color of every category's pill, used by EVERY preset, the legend and grayed visited rows.
 	// {star} renders as the in-game star. Short labels for the compact view are in "compact" > "compactLabels".
 	"badgeStyles": {
 		"MODS_WEAPON4": { "label": "4{star}W",   "color": "0xf6cd60" },
@@ -76,7 +76,7 @@
 
 	// ---------------------------------------------------------------- position and size
 	// dock "left" (grows right) or "right" (grows left); anchor "top" (grows down) or "bottom" (grows up).
-	// Docked right, the layout is mirrored (SHOP | COST | PLAYER | LVL, pills growing toward the centre);
+	// Docked right, the layout is mirrored (SHOP | COST | PLAYER | LVL, pills growing toward the center);
 	// "mirror": false keeps the normal column order. Switch both live from the menu (UI > Dock / Anchor).
 	// "positions": where the board sits, one entry per dock/anchor combination. The numbers are 16:9 HUD units:
 	// x runs 0 (left edge of the screen) to 1920 (right edge), y runs 0 (top) to 1080 (bottom). Each entry places
@@ -129,7 +129,7 @@
 	"vendorGrow": false,
 	"nameMaxChars": 14,      // longer player names are cut with an ellipsis so the name column stays narrow
 	// Player name text. {name} plus status tags, each replaced by its text below when it applies to that player
-	// (empty = colour only): {friend}, {bounty} ({caps} = the bounty), {leader}, {member} (team), {wanted}.
+	// (empty = color only): {friend}, {bounty} ({caps} = the bounty), {leader}, {member} (team), {wanted}.
 	"nameFormat": "{name}{bounty}{friend}",
 	"nameTags": { "friend": " [F]", "bounty": " ({caps}c)", "leader": "", "member": "", "wanted": "" },
 	"minRows": 0,            // reserve space for at least this many rows so the panel height stays put (0 = off)
@@ -172,7 +172,7 @@
 	"showCost": true,        // estimated fast-travel caps to the camp ("~" = estimate; "free" for team camps)
 	"showDistance": false,   // raw map distance instead of caps (the "distance" column width then applies)
 	"showDirection": false,  // compass heading after the distance
-	"showLegend": true,      // colour key under the table (menu: UI > Legend)
+	"showLegend": true,      // color key under the table (menu: UI > Legend)
 	"showFilters": true,     // "Filters:" list under the legend, active preset highlighted (menu: UI > Filter list)
 	"showKeys": true,        // "Hotkeys:" line under that (menu: UI > Hotkeys line)
 	"debug": false,          // diagnostics line under the table (menu: SYSTEM > Debug line)
@@ -191,18 +191,18 @@
 	"caps": { "perUnit": 84, "min": 1, "freeForTeam": true, "prefix": "", "suffix": "c" },
 	"useFlyoutCost": false,  // read the game's real travel price for the camp selected on the map (experimental, off)
 
-	// Camps you have stood in (within visitedRadius map units) are greyed, or hidden with hideVisited.
+	// Camps you have stood in (within visitedRadius map units) are grayed, or hidden with hideVisited.
 	"hideVisited": false,    // menu: FILTERING > Hide visited
 	"visitedAlpha": 0.6,            // visited rows are faded to this alpha ...
-	"visitedPillColor": "0x6b675e", // ... and their pills drawn in this grey, blended with the category colour
-	"visitedTint": 0.35,            // how much category colour shows through on visited pills (0 = flat grey, 1 = full colour)
+	"visitedPillColor": "0x6b675e", // ... and their pills drawn in this gray, blended with the category color
+	"visitedTint": 0.35,            // how much category color shows through on visited pills (0 = flat gray, 1 = full color)
 	"visitedRadius": 25,
 
 	"rememberChoices": false, // true: keep menu choices in extender storage across sessions. Leave false with Improved HUD
 	                          // installed - a second storage user in the HUD breaks its F10 settings window.
 
-	// ---------------------------------------------------------------- colours
-	// Row colours by status. remote = everyone without a status (UI off-yellow), local = you (cobalt).
+	// ---------------------------------------------------------------- colors
+	// Row colors by status. remote = everyone without a status (UI off-yellow), local = you (cobalt).
 	"colors": {
 		"header": "0xecc86c", "count": "0x9fd79a", "countFull": "0xff6b6b",
 		"local": "0x3b7bff", "remote": "0xf2f0cc", "friend": "0x7fd1ae",
@@ -219,7 +219,7 @@
 	"pillPad": 14,           // horizontal padding inside a pill
 	"pillWrap": true,        // pills that do not fit the shop column continue on the next line of the row;
 	                         // false folds them into one "+N" pill instead
-	"pillOverflowColor": "0x8a8373", // colour of that "+N" pill and of the "empty shop" / "no shop" pills
+	"pillOverflowColor": "0x8a8373", // color of that "+N" pill and of the "empty shop" / "no shop" pills
 
 	// ---------------------------------------------------------------- score
 	// Interest score = player level / levelScore.divisor (capped) + per category: weight x count, capped at cap.
@@ -237,7 +237,7 @@
 		"APPAREL":      { "weight": 1,  "cap": 8 }
 	},
 	"levelScore": { "divisor": 100, "cap": 10 },   // level 650 -> 6.5 points, level 1000+ -> 10
-	"highlightScore": 6,     // rows at or above this score get the highlight colour
+	"highlightScore": 6,     // rows at or above this score get the highlight color
 
 	// ---------------------------------------------------------------- sort presets
 	// Cycled with sortKey and listed in the menu (FILTERING > Sort preset). Keys, tried in order until two

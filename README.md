@@ -37,6 +37,6 @@ python build.py
 
 Output: `dist/VendorBoard.ba2` and `dist/VendorBoard-<version>.zip`.
 
-## Licence
+## License
 
 GPL-3.0, see [LICENSE](LICENSE). Based on [HUD-PlayerList](https://github.com/MsZelia/HUD-PlayerList) by MsZelia (GPL-3.0). Third-party notices in [NOTICE.txt](NOTICE.txt).
