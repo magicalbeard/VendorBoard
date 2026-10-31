@@ -160,6 +160,10 @@ package
 
       private var panel:Sprite = null;
 
+      private var board:Sprite = null;
+
+      private var boardRect:Rectangle = null;
+
       private var lastError:String = "";
 
       private var api:Object = null;
@@ -196,13 +200,16 @@ package
          {
             this.hudTools = null;
          }
+         this.board = new Sprite();
+         addChild(this.board);
          this.panel = new Sprite();
-         addChild(this.panel);
+         this.board.addChild(this.panel);
          this.header = this.makeField();
          this.keysLine = this.makeField();
          this.toastBg = new Sprite();
          addChild(this.toastBg);
          this.toastTf = this.makeField();
+         addChild(this.toastTf);
          this.toastBg.visible = false;
          this.toastTf.visible = false;
          this.colTitles = {"level":this.makeField(),"name":this.makeField(),"dist":this.makeField(),"vendor":this.makeField()};
@@ -240,6 +247,9 @@ package
       {
          return {
             "origin":"screen",
+            "dock":"left",
+            "anchor":"top",
+            "mirror":true,
             "x":20,
             "y":200,
             "font":"$MAIN_Font_Bold",
@@ -327,21 +337,8 @@ package
             "pillGap":5,
             "pillPad":14,
             "pillOverflowColor":"0x8a8373",
-            "badges":[
-               {"id":"MODS_WEAPON4","label":"4{star}W","color":"0xf6cd60"},
-               {"id":"MODS_ARMOR4","label":"4{star}A","color":"0xf6cd60"},
-               {"id":"MODS_PA4","label":"4{star}PA","color":"0xf6cd60"},
-               {"id":"MODS_WEAPON3","label":"3{star}W","color":"0xe0b48c"},
-               {"id":"MODS_ARMOR3","label":"3{star}A","color":"0xe0b48c"},
-               {"id":"MODS_PA3","label":"3{star}PA","color":"0xe0b48c"},
-               {"id":"WEAPON4","label":"Wep4{star}","color":"0xff9f6e"},
-               {"id":"ARMOR4","label":"Arm4{star}","color":"0xff9f6e"},
-               {"id":"WEAPON3","label":"Wep3{star}","color":"0xe0b48c"},
-               {"id":"ARMOR3","label":"Arm3{star}","color":"0xe0b48c"},
-               {"id":"PLAN","label":"Plan","color":"0x9fd79a"},
-               {"id":"APPAREL","label":"Aprl","color":"0xc9a7ff"},
-               {"id":"MODS","label":"Mods","color":"0xa09a84"}
-            ],
+            "badges":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4","MODS_WEAPON3","MODS_ARMOR3","MODS_PA3","WEAPON4","ARMOR4","WEAPON3","ARMOR3","PLAN","APPAREL","MODS"],
+            "badgeStyles":{},
             "score":{
                "MODS_WEAPON4":{"weight":10,"cap":40},"MODS_ARMOR4":{"weight":10,"cap":40},"MODS_PA4":{"weight":10,"cap":40},
                "WEAPON4":{"weight":4,"cap":20},"ARMOR4":{"weight":4,"cap":20},
@@ -366,6 +363,8 @@ package
                {"name":"FRIENDS","friendsOnly":true}
             ],
             "nameMaxChars":14,
+            "nameFormat":"{name}{bounty}{friend}",
+            "nameTags":{"friend":" [F]","bounty":" ({caps}c)","leader":"","member":"","wanted":""},
             "preset":0
          };
       }
@@ -412,7 +411,7 @@ package
          var merged:Object = this.defaultConfig();
          for(key in parsed)
          {
-            if((key == "colors" || key == "columns" || key == "columnTitles" || key == "caps") && parsed[key] != null)
+            if((key == "colors" || key == "columns" || key == "columnTitles" || key == "caps" || key == "nameTags" || key == "badgeStyles") && parsed[key] != null)
             {
                for(var sub:String in parsed[key])
                {
@@ -1159,6 +1158,8 @@ package
                this.hudTools.AddMenuItem("vb_keys","Hotkeys line: " + (this.cfg.showKeys === true ? "ON" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_filters","Filter list: " + (this.cfg.showFilters === true ? "ON" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_legend","Legend: " + (this.cfg.showLegend === true ? "ON" : "OFF"),true,false,250);
+               this.hudTools.AddMenuItem("vb_anchor","Anchor: " + (this.cfg.anchor == "bottom" ? "BOTTOM (grows up)" : "TOP (grows down)"),true,false,250);
+               this.hudTools.AddMenuItem("vb_dock","Dock: " + (this.cfg.dock == "right" ? "RIGHT (grows left)" : "LEFT (grows right)"),true,false,250);
                this.hudTools.AddMenuItem("vb_pos","Position " + int(this.cfg.x) + " / " + int(this.cfg.y),true,true,0);
                this.hudTools.AddMenuItem("vb_cols","Two columns: " + (int(this.cfg.wrapRows) > 0 ? "ON (" + int(this.cfg.wrapRows) + " rows each)" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_sts","Small text size: " + int(this.cfg.smallTextSize),true,true,0);
@@ -1194,7 +1195,7 @@ package
                list = CATEGORY_GROUP[parentItem] as Array;
                while(i < list.length)
                {
-                  this.hudTools.AddMenuItem("vb_bt_" + list[i],(this.badgeOn(String(list[i])) ? "ON  " : "off  ") + String(this.defaultBadge(String(list[i])).label).split("{star}").join(STAR) + "  (" + String(list[i]) + ")",true,false,250);
+                  this.hudTools.AddMenuItem("vb_bt_" + list[i],(this.badgeOn(String(list[i])) ? "ON  " : "off  ") + String(this.styledBadge(String(list[i])).label).split("{star}").join(STAR) + "  (" + String(list[i]) + ")",true,false,250);
                   i++;
                }
             }
@@ -1267,7 +1268,7 @@ package
             else if(selectItem.indexOf("vb_bt_") == 0)
             {
                this.toggleBadge(selectItem.substr(6));
-               this.toast("badge " + String(this.defaultBadge(selectItem.substr(6)).label).split("{star}").join(STAR) + " " + (this.badgeOn(selectItem.substr(6)) ? "ON" : "OFF"));
+               this.toast("badge " + String(this.styledBadge(selectItem.substr(6)).label).split("{star}").join(STAR) + " " + (this.badgeOn(selectItem.substr(6)) ? "ON" : "OFF"));
             }
             else if(selectItem.indexOf("vb_ts_") == 0 || selectItem.indexOf("vb_sts_") == 0)
             {
@@ -1318,6 +1319,10 @@ package
                this.ov.twoColumns = int(this.cfg.wrapRows) <= 0;
                this.applyOverrides();
                this.toast("two columns " + (int(this.cfg.wrapRows) > 0 ? "ON" : "OFF"));
+            }
+            else if(selectItem == "vb_dock" || selectItem == "vb_anchor")
+            {
+               this.toggleDock(selectItem == "vb_dock");
             }
             else if(selectItem == "vb_view")
             {
@@ -1393,60 +1398,69 @@ package
             this.loadConfig();
             return;
          }
-         if(dir == "u")
-         {
-            y -= 10;
-         }
-         else if(dir == "d")
-         {
-            y += 10;
-         }
-         else if(dir == "U")
-         {
-            y -= 50;
-         }
-         else if(dir == "D")
-         {
-            y += 50;
-         }
-         else if(dir == "l")
-         {
-            x -= 10;
-         }
-         else if(dir == "r")
-         {
-            x += 10;
-         }
+         var dx:Number = dir == "l" ? -10 : (dir == "r" ? 10 : 0);
+         var dy:Number = dir == "u" ? -10 : (dir == "d" ? 10 : (dir == "U" ? -50 : (dir == "D" ? 50 : 0)));
+         var fromRight:Boolean = this.cfg.dock == "right" && this.cfg.origin != "stage";
+         var fromBottom:Boolean = this.cfg.anchor == "bottom" && this.cfg.origin != "stage";
+         x += fromRight ? -dx : dx;
+         y += fromBottom ? -dy : dy;
          this.ov.x = x;
          this.ov.y = y;
          this.cfg.x = x;
          this.cfg.y = y;
       }
 
-      // board origin in stage coordinates. origin "screen": x/y are measured from the visible screen's top-left
-      // corner (Scaleform's visibleRect), so the same numbers work on 16:9 and ultrawide. "stage": raw coordinates.
-      private function origin() : Object
+      private function visibleRect() : Rectangle
       {
-         var r:Rectangle = null;
-         var ox:Number = Number(this.cfg.x);
-         var oy:Number = Number(this.cfg.y);
-         if(this.cfg.origin != "stage")
+         try
          {
-            try
-            {
-               r = Extensions.visibleRect;
-            }
-            catch(err:Error)
-            {
-               r = null;
-            }
-            if(r != null)
-            {
-               ox += r.x;
-               oy += r.y;
-            }
+            return Extensions.visibleRect;
          }
-         return {"x":ox,"y":oy};
+         catch(err:Error)
+         {
+         }
+         return null;
+      }
+
+      private function isMirrored() : Boolean
+      {
+         return this.cfg.dock == "right" && this.cfg.mirror !== false;
+      }
+
+      // place the board by its docked corner. origin "screen": x / y are distances from the visible screen's edges
+      // (left or right, top or bottom), so the same numbers work on any aspect ratio. "stage": raw coordinates of
+      // that corner.
+      private function placeBoard(W:Number, H:Number) : void
+      {
+         var r:Rectangle = this.cfg.origin != "stage" ? this.visibleRect() : null;
+         var x:Number = Number(this.cfg.x);
+         var y:Number = Number(this.cfg.y);
+         var left:Number = this.cfg.dock == "right" ? (r != null ? r.x + r.width - x : x) - W : (r != null ? r.x : 0) + x;
+         var top:Number = this.cfg.anchor == "bottom" ? (r != null ? r.y + r.height - y : y) - H : (r != null ? r.y : 0) + y;
+         this.board.x = left;
+         this.board.y = top;
+         this.boardRect = new Rectangle(left,top,W,H);
+      }
+
+      // mirror a field horizontally inside a box of width W (position and alignment)
+      private function flipField(tf:TextField, W:Number) : void
+      {
+         var fmt:TextFormat = null;
+         var d:TextFormat = null;
+         if(tf == null || !tf.visible)
+         {
+            return;
+         }
+         fmt = new TextFormat();
+         fmt.align = tf.defaultTextFormat.align == "right" ? "left" : (tf.defaultTextFormat.align == "center" ? "center" : "right");
+         tf.x = W - tf.x - tf.width;
+         if(tf.text.length > 0)
+         {
+            tf.setTextFormat(fmt);
+         }
+         d = tf.defaultTextFormat;
+         d.align = fmt.align;
+         tf.defaultTextFormat = d;
       }
 
       private function toast(message:String) : void
@@ -1474,14 +1488,21 @@ package
             this.styleField(this.toastTf,this.color("highlight"),"left",size);
             this.toastTf.text = "VendorBoard: " + message;
             w = this.toastTf.textWidth + 24;
-            var org:Object = this.origin();
-            this.toastTf.x = Number(org.x) + 12;
-            this.toastTf.y = Number(org.y) - h - 10;
+            var br:Rectangle = this.boardRect != null ? this.boardRect : new Rectangle(Number(this.cfg.x),Number(this.cfg.y),0,0);
+            var vis:Rectangle = this.visibleRect();
+            var tx:Number = this.cfg.dock == "right" ? br.right - (w + 24) : br.x;
+            var ty:Number = br.y - h - 10;
+            if(vis != null && ty - 2 < vis.y)
+            {
+               ty = br.bottom + 12;
+            }
+            this.toastTf.x = tx + 12;
+            this.toastTf.y = ty;
             this.toastTf.width = w;
             this.toastTf.height = h;
             this.toastBg.graphics.clear();
             this.toastBg.graphics.beginFill(uint(parseInt(String(this.cfg.backgroundColor))),0.85);
-            this.toastBg.graphics.drawRoundRect(Number(org.x),this.toastTf.y - 2,w + 24,h + 4,8,8);
+            this.toastBg.graphics.drawRoundRect(tx,ty - 2,w + 24,h + 4,8,8);
             this.toastBg.graphics.endFill();
             this.toastBg.visible = true;
             this.toastTf.visible = true;
@@ -1579,6 +1600,32 @@ package
          this.toast((small ? "small text size " : "text size ") + int(this.cfg[key]));
       }
 
+      // switch the docked edge. With origin "screen" x / y keep their meaning (distance from the edge), so the board
+      // moves to the other side; with origin "stage" the raw coordinate is mirrored across the visible screen.
+      private function toggleDock(horizontal:Boolean) : void
+      {
+         var vis:Rectangle = this.visibleRect();
+         if(horizontal)
+         {
+            this.ov.dock = this.cfg.dock == "right" ? "left" : "right";
+            if(this.cfg.origin == "stage" && vis != null)
+            {
+               this.ov.x = vis.x + vis.right - Number(this.cfg.x);
+            }
+         }
+         else
+         {
+            this.ov.anchor = this.cfg.anchor == "bottom" ? "top" : "bottom";
+            if(this.cfg.origin == "stage" && vis != null)
+            {
+               this.ov.y = vis.y + vis.bottom - Number(this.cfg.y);
+            }
+         }
+         this.ovDirty = true;
+         this.applyOverrides();
+         this.toast(horizontal ? "dock " + String(this.cfg.dock).toUpperCase() : "anchor " + String(this.cfg.anchor).toUpperCase());
+      }
+
       private function applyOverrides() : void
       {
          var g:String = null;
@@ -1595,6 +1642,14 @@ package
          if(this.ov.highlightScore != null)
          {
             this.cfg.highlightScore = Number(this.ov.highlightScore);
+         }
+         if(this.ov.dock != null)
+         {
+            this.cfg.dock = String(this.ov.dock);
+         }
+         if(this.ov.anchor != null)
+         {
+            this.cfg.anchor = String(this.ov.anchor);
          }
          if(this.ov.x != null)
          {
@@ -2011,7 +2066,7 @@ package
          tf.selectable = false;
          tf.mouseEnabled = false;
          tf.autoSize = TextFieldAutoSize.NONE;
-         addChild(tf);
+         this.board.addChild(tf);
          return tf;
       }
 
@@ -2031,7 +2086,7 @@ package
          while(this.rows.length <= i)
          {
             r = {"level":this.makeField(),"name":this.makeField(),"dist":this.makeField(),"vendor":this.makeField(),"pills":new Sprite(),"pillTfs":[]};
-            addChild(r.pills);
+            this.board.addChild(r.pills);
             this.rows.push(r);
          }
          return this.rows[i];
@@ -2074,6 +2129,21 @@ package
          }
       }
 
+      // "nameFormat" with {name} and status tags; each tag is replaced by its "nameTags" text when it applies
+      private function formatName(p:Object) : String
+      {
+         var fmt:String = this.cfg.nameFormat != null ? String(this.cfg.nameFormat) : "{name}{bounty}{friend}";
+         var tags:Object = this.cfg.nameTags != null ? this.cfg.nameTags : {};
+         var on:Object = {"friend":p.isFriend === true,"bounty":int(p.bounty) > 0,"leader":p.type == "TeamLeader","member":p.type == "TeamMember","wanted":p.type == "MostWanted"};
+         var out:String = fmt;
+         var k:String = null;
+         for(k in on)
+         {
+            out = out.split("{" + k + "}").join(on[k] === true && tags[k] != null ? String(tags[k]).split("{caps}").join(String(int(p.bounty))) : "");
+         }
+         return out.split("{name}").join(this.shortName(String(p.name)));
+      }
+
       private function shortName(name:String) : String
       {
          var max:int = int(this.cfg.nameMaxChars);
@@ -2107,6 +2177,52 @@ package
             return this.color("teamMember");
          }
          return this.color("remote");
+      }
+
+      private function badgeId(entry:*) : String
+      {
+         if(entry == null)
+         {
+            return "";
+         }
+         return entry is String ? String(entry) : String(entry.id);
+      }
+
+      // the style (label, colour) of a category, the same for every preset: built-in default, then the label/colour
+      // of a legacy {id,label,color} entry in "badges", then "badgeStyles"
+      private function styledBadge(id:String) : Object
+      {
+         var b:Object = this.defaultBadge(id);
+         var i:int = 0;
+         var list:Array = this.cfg.badges as Array;
+         var st:Object = this.cfg.badgeStyles != null ? this.cfg.badgeStyles[id] : null;
+         while(list != null && i < list.length)
+         {
+            if(list[i] != null && !(list[i] is String) && list[i].id == id)
+            {
+               if(list[i].label != null)
+               {
+                  b.label = list[i].label;
+               }
+               if(list[i].color != null)
+               {
+                  b.color = list[i].color;
+               }
+            }
+            i++;
+         }
+         if(st != null)
+         {
+            if(st.label != null)
+            {
+               b.label = st.label;
+            }
+            if(st.color != null)
+            {
+               b.color = st.color;
+            }
+         }
+         return b;
       }
 
       private function defaultBadge(id:String) : Object
@@ -2181,7 +2297,7 @@ package
                id = String(presetBadges[i]);
                if(CATEGORY_INDEX[id] != null && !seen[id])
                {
-                  out.push(this.defaultBadge(id));
+                  out.push(this.styledBadge(id));
                   seen[id] = true;
                }
                i++;
@@ -2207,10 +2323,11 @@ package
          var on:Object = this.ov.badgeOn != null ? this.ov.badgeOn : {};
          while(list != null && i < list.length)
          {
-            if(list[i] != null && CATEGORY_INDEX[list[i].id] != null && off[list[i].id] !== true)
+            id = this.badgeId(list[i]);
+            if(CATEGORY_INDEX[id] != null && off[id] !== true && !seen[id])
             {
-               out.push(list[i]);
-               seen[list[i].id] = true;
+               out.push(this.styledBadge(id));
+               seen[id] = true;
             }
             i++;
          }
@@ -2220,7 +2337,7 @@ package
             id = String(CATEGORY_ORDER[i]);
             if(on[id] === true && !seen[id] && off[id] !== true)
             {
-               out.push(this.defaultBadge(id));
+               out.push(this.styledBadge(id));
                seen[id] = true;
             }
             i++;
@@ -2350,7 +2467,7 @@ package
          return this.measureTf.textWidth;
       }
 
-      private function drawPills(r:Object, items:Array, rowH:Number, maxW:Number, muted:Boolean) : Number
+      private function drawPills(r:Object, items:Array, rowH:Number, maxW:Number, muted:Boolean, mirrorW:Number = 0) : Number
       {
          var i:int = 0;
          var tf:TextField = null;
@@ -2412,13 +2529,13 @@ package
             }
             tf.text = label;
             tf.setTextFormat(fmt);
-            tf.x = x;
+            tf.x = mirrorW > 0 ? mirrorW - x - w : x;
             tf.y = line * rowH;
             tf.width = w;
             tf.height = rowH;
             tf.visible = true;
             r.pills.graphics.beginFill(color,Number(this.cfg.pillAlpha));
-            r.pills.graphics.drawRoundRect(x,line * rowH + 2,w,rowH - 4,radius,radius);
+            r.pills.graphics.drawRoundRect(mirrorW > 0 ? mirrorW - x - w : x,line * rowH + 2,w,rowH - 4,radius,radius);
             r.pills.graphics.endFill();
             x += w + gap;
             if(x - gap > widest)
@@ -2640,18 +2757,7 @@ package
       // reference colour of a category: json "badges" entry if present, else the built-in default (preset-independent)
       private function refColor(id:String) : uint
       {
-         var i:int = 0;
-         var list:Array = this.cfg.badges as Array;
-         var b:Object = null;
-         while(list != null && i < list.length)
-         {
-            if(list[i] != null && list[i].id == id && list[i].color != null)
-            {
-               return uint(list[i].color is String ? parseInt(String(list[i].color)) : list[i].color);
-            }
-            i++;
-         }
-         b = this.defaultBadge(id);
+         var b:Object = this.styledBadge(id);
          return uint(b.color is String ? parseInt(String(b.color)) : b.color);
       }
 
@@ -2760,9 +2866,9 @@ package
             }
             showLevel = this.cfg.showLevel === true;
             showDist = this.cfg.showDistance === true || this.cfg.showCost === true;
-            var org:Object = this.origin();
-            x0 = Number(org.x) + Number(this.cfg.padding);
-            y = Number(org.y) + Number(this.cfg.padding);
+            var org:Object = {"x":0,"y":0};
+            x0 = Number(this.cfg.padding);
+            y = Number(this.cfg.padding);
             rowH = Number(this.cfg.textSize) + 6 + Number(this.cfg.rowSpacing);
             preset = this.currentPreset();
             // pass 1: text + measure
@@ -2774,7 +2880,7 @@ package
                this.styleField(r.level,p.visited && !p.local ? this.color("visited") : this.typeColor(p),"right");
                r.level.text = String(p.level);
                this.styleField(r.name,p.visited && !p.local ? this.color("visited") : this.typeColor(p));
-               r.name.text = this.shortName(p.name) + (p.bounty > 0 ? " (" + p.bounty + "c)" : "") + (p.isFriend ? " [F]" : "");
+               r.name.text = this.formatName(p);
                this.styleField(r.dist,this.color("distance"),this.cfg.showDistance === true ? "left" : "right");
                r.dist.text = p.local ? "" : (this.cfg.showDistance === true ? (p.dist >= 0 ? String(p.dist) + (this.cfg.showDirection === true ? " " + p.dir : "") : "") + (this.cfg.showCost === true ? "  " + this.costText(p) : "") : (this.cfg.showCost === true ? this.costText(p) : ""));
                r.level.width = Number(cols.level);
@@ -2786,7 +2892,8 @@ package
                if(this.cfg.badgeStyle == "pill")
                {
                   r.vendor.htmlText = "";
-                  p.pillW = this.drawPills(r,this.rowPills(p),rowH,this.vendorCap(cols),p.visited === true && !p.local);
+                  p.pillItems = this.rowPills(p);
+                  p.pillW = this.drawPills(r,p.pillItems,rowH,this.vendorCap(cols),p.visited === true && !p.local);
                   p.rowPx = rowH * int(r.pillLines > 0 ? r.pillLines : 1);
                   if(p.pillW > wVendor)
                   {
@@ -3048,9 +3155,38 @@ package
             if(this.cfg.background === true)
             {
                this.panel.graphics.beginFill(uint(parseInt(String(this.cfg.backgroundColor))),Number(this.cfg.backgroundAlpha));
-               this.panel.graphics.drawRect(Number(org.x),Number(org.y),totalW + 2 * Number(this.cfg.padding),y - Number(org.y) + Number(this.cfg.padding));
+               this.panel.graphics.drawRect(0,0,totalW + 2 * Number(this.cfg.padding),y + Number(this.cfg.padding));
                this.panel.graphics.endFill();
             }
+            var W:Number = totalW + 2 * Number(this.cfg.padding);
+            if(this.isMirrored())
+            {
+               this.flipField(this.header,W);
+               this.flipField(this.colTitles.level,W);
+               this.flipField(this.colTitles.name,W);
+               this.flipField(this.colTitles.dist,W);
+               this.flipField(this.colTitles.vendor,W);
+               this.flipField(this.legend,W);
+               this.flipField(this.keysLine,W);
+               this.flipField(this.status,W);
+               i = 0;
+               while(i < shown.length)
+               {
+                  p = shown[i];
+                  r = this.rowAt(i);
+                  this.flipField(r.level,W);
+                  this.flipField(r.name,W);
+                  this.flipField(r.dist,W);
+                  this.flipField(r.vendor,W);
+                  if(this.cfg.badgeStyle == "pill" && p.pillItems != null && wVendor > 0)
+                  {
+                     this.drawPills(r,p.pillItems,rowH,wVendor,p.visited === true && !p.local,wVendor);
+                  }
+                  r.pills.x = W - r.pills.x - wVendor;
+                  i++;
+               }
+            }
+            this.placeBoard(W,y + Number(this.cfg.padding));
          }
          catch(err:Error)
          {
@@ -3059,8 +3195,8 @@ package
             {
                this.styleField(this.status,this.color("status"));
                this.status.text = this.lastError;
-               this.status.x = Number(this.origin().x);
-               this.status.y = Number(this.origin().y);
+               this.status.x = 0;
+               this.status.y = 0;
                this.status.width = 600;
                this.status.height = 24;
                this.status.visible = true;
