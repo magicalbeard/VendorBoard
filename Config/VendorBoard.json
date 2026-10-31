@@ -178,7 +178,12 @@
 	"debug": false,          // diagnostics line under the table (menu: SYSTEM > Debug line)
 	"hudMenu": true,         // VendorBoard entry in the HUDModLoader menu
 	"toastSeconds": 2.5,     // how long the on-screen confirmation of a menu change stays
-	"confirmStyle": "both",  // "toast" = the mod's own pill above the board, "hud" = the game's HUD message stack, "both"
+	// How menu changes are confirmed: "toast" = the mod's own popup, "hud" = the game's notification feed (where the
+	// game and other mods post their messages), "both".
+	"confirmStyle": "both",
+	// Top-left corner of the popup in 16:9 HUD units from the visible screen's top-left. It stays here wherever the
+	// board is docked.
+	"toastPosition": { "x": 20, "y": 150 },
 	"refreshMs": 1000,       // how often the board re-reads the map data while visible
 
 	// caps = round(distance / perUnit), at least min; team camps are free. When you click a camp on the map

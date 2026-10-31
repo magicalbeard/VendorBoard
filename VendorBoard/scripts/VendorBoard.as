@@ -57,6 +57,13 @@ package
 
       private var toastUntil:int = 0;
 
+      // game notification feed: sent right away through HUDTools' message queue; bursts are spaced 250 ms apart
+      private var hudPending:Array = [];
+
+      private var hudLastSend:int = 0;
+
+      private var hudSent:int = 0;
+
       // HUD stage size; "positions" are in these units (16:9)
       private static const HUD_W:Number = 1920;
       private static const HUD_H:Number = 1080;
@@ -285,6 +292,7 @@ package
             },
             "toastSeconds":2.5,
             "confirmStyle":"both",
+            "toastPosition":{"x":20,"y":150},
             "smallTextSize":13,
             "scaleColumns":true,
             "hideEmptyShops":true,
@@ -1548,13 +1556,7 @@ package
          var style:String = String(this.cfg.confirmStyle);
          if(style == "hud" || style == "both")
          {
-            try
-            {
-               GlobalFunc.ShowHUDMessage("VendorBoard: " + message);
-            }
-            catch(errHud:Error)
-            {
-            }
+            this.queueHud("VendorBoard: " + message);
          }
          if(style == "hud")
          {
@@ -1565,14 +1567,11 @@ package
             this.styleField(this.toastTf,this.color("highlight"),"left",size);
             this.toastTf.text = "VendorBoard: " + message;
             w = this.toastTf.textWidth + 24;
-            var br:Rectangle = this.boardRect != null ? this.boardRect : new Rectangle(Number(this.cfg.x),Number(this.cfg.y),0,0);
+            // always the same spot, measured from the visible screen's top-left (16:9 HUD units)
+            var tp:Object = this.cfg.toastPosition != null ? this.cfg.toastPosition : {"x":20,"y":150};
             var vis:Rectangle = this.visibleRect();
-            var tx:Number = this.cfg.dock == "right" ? br.right - (w + 24) : br.x;
-            var ty:Number = br.y - h - 10;
-            if(vis != null && ty - 2 < vis.y)
-            {
-               ty = br.bottom + 12;
-            }
+            var tx:Number = (vis != null ? vis.x : 0) + Number(tp.x);
+            var ty:Number = (vis != null ? vis.y : 0) + Number(tp.y);
             this.toastTf.x = tx + 12;
             this.toastTf.y = ty;
             this.toastTf.width = w;
@@ -1591,8 +1590,51 @@ package
          }
       }
 
+      private function queueHud(text:String) : void
+      {
+         var i:int = this.hudPending.indexOf(text);
+         if(i >= 0)
+         {
+            this.hudPending.splice(i,1);
+         }
+         this.hudPending.push(text);
+         while(this.hudPending.length > 3)
+         {
+            this.hudPending.shift();
+         }
+         this.hudFlush();
+      }
+
+      private function hudFlush() : void
+      {
+         var text:String = null;
+         if(this.hudPending.length == 0 || getTimer() - this.hudLastSend < 250)
+         {
+            return;
+         }
+         text = String(this.hudPending.shift());
+         this.hudLastSend = getTimer();
+         try
+         {
+            if(this.hudTools != null)
+            {
+               this.hudTools.dispatchMessage(text);
+            }
+            else
+            {
+               GlobalFunc.ShowHUDMessage(text);
+            }
+            this.hudSent++;
+         }
+         catch(err:Error)
+         {
+            this.lastError = "hud message: " + err.message;
+         }
+      }
+
       private function toastTick() : void
       {
+         this.hudFlush();
          if(this.toastTf != null && this.toastTf.visible && getTimer() >= this.toastUntil)
          {
             this.toastTf.visible = false;
@@ -2865,6 +2907,7 @@ package
          {
             s += " act{" + d.actKeys + "}";
          }
+         s += " hudSent=" + this.hudSent + " hudPending=" + this.hudPending.length + (this.hudTools != null && this.hudTools.isActive ? " menuOpen" : "");
          return s;
       }
 
