@@ -77,23 +77,31 @@
 	// dock "left" (grows right) or "right" (grows left); anchor "top" (grows down) or "bottom" (grows up).
 	// Docked right, the layout is mirrored (SHOP | COST | PLAYER | LVL, pills growing toward the centre);
 	// "mirror": false keeps the normal column order. Switch both live from the menu (UI > Dock / Anchor).
-	// origin "screen": x / y are the distances from the docked screen edges, so the same numbers work on 16:9 and
-	// ultrawide monitors. origin "stage": raw HUD coordinates of the docked corner (HUDPlayerList convention, where
-	// x = 0 is the left edge of a 16:9 screen and an ultrawide's edge is near -320). Nudge live (UI > Position).
+	// "positions": where the board sits for each dock/anchor combination, in 16:9 HUD units (0,0 = top-left of
+	// the screen, 1920,1080 = bottom-right). Each entry is the board corner that stays put: topLeft = the board's
+	// top-left corner, bottomRight = its bottom-right corner, and so on. Larger x is always further right, larger y
+	// further down. Nudge live from the menu (UI > Position); that moves the corner currently in use.
+	// origin "screen": on other aspect ratios each corner keeps its distance from the screen edges it is docked to,
+	// so the same numbers work on 16:9 and ultrawide. origin "stage": raw HUD coordinates (HUDPlayerList
+	// convention: on a 21:9 monitor the left edge is near x = -320 and the right edge near x = 2240).
 	//
-	// Layout that never covers the World Activity list / fast-travel menu (lower middle of the map): dock the
+	// Layout that never covers the World Activity list / fast-travel menu (lower middle of the map): put the
 	// board to the right of that panel with a narrow shop column -
-	//   "origin": "stage", "x": 410, "y": 200,
+	//   "origin": "stage", "positions": { "topLeft": { "x": 410, "y": 200 } },
 	//   "columns": { "level": 36, "name": 110, "distance": 100, "cost": 44, "vendor": 300, "vendorMax": 300 },
 	//   "nameMaxChars": 12
-	// Ultrawide: the default works unchanged (20 units in from your screen's real left edge). If you prefer the
-	// raw-coordinate layout the author uses on a 21:9 monitor, set:  "origin": "stage", "x": -320, "y": 200
+	// Ultrawide: the defaults work unchanged. The raw-coordinate layout the author uses on a 21:9 monitor:
+	//   "origin": "stage", "positions": { "topLeft": { "x": -320, "y": 200 }, "topRight": { "x": 2240, "y": 200 } }
 	"origin": "screen",
 	"dock": "left",
 	"anchor": "top",
 	"mirror": true,
-	"x": 20,
-	"y": 200,
+	"positions": {
+		"topLeft":     { "x": 20,   "y": 200 },
+		"topRight":    { "x": 1900, "y": 200 },
+		"bottomLeft":  { "x": 20,   "y": 960 },
+		"bottomRight": { "x": 1900, "y": 960 }
+	},
 	"font": "$MAIN_Font_Bold",   // other working fonts: $MAIN_Font, $Futura_Bold, $ConsoleFont, $Terminal_Font
 	"textSize": 16,          // rows and header (menu: UI > Text size)
 	"smallTextSize": 13,     // legend, filter list and hotkeys line (menu: UI > Small text size)

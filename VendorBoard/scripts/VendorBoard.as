@@ -57,6 +57,9 @@ package
 
       private var toastUntil:int = 0;
 
+      // HUD stage size; "positions" are in these units (16:9)
+      private static const HUD_W:Number = 1920;
+      private static const HUD_H:Number = 1080;
       private static const CATEGORY_ORDER:Array = ["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4","MODS_WEAPON3","MODS_ARMOR3","MODS_PA3","MODS_WEAPON2","MODS_ARMOR2","MODS_PA2","MODS_WEAPON1","MODS_ARMOR1","MODS_PA1","MODS","WEAPON4","WEAPON3","WEAPON2","WEAPON1","WEAPON0","ARMOR4","ARMOR3","ARMOR2","ARMOR1","ARMOR0","APPAREL","PLAN","STIMPAK","MEDS","FOOD","DRINK","AMMO","EXPLOSIVE","JUNK","MISC"];
 
       private static const CATEGORY_GROUP:Object = {"vb_bm":["MODS_WEAPON4","MODS_ARMOR4","MODS_PA4","MODS_WEAPON3","MODS_ARMOR3","MODS_PA3","MODS_WEAPON2","MODS_ARMOR2","MODS_PA2","MODS_WEAPON1","MODS_ARMOR1","MODS_PA1","MODS"],
@@ -250,8 +253,7 @@ package
             "dock":"left",
             "anchor":"top",
             "mirror":true,
-            "x":20,
-            "y":200,
+            "positions":{"topLeft":{"x":20,"y":200},"topRight":{"x":1900,"y":200},"bottomLeft":{"x":20,"y":960},"bottomRight":{"x":1900,"y":960}},
             "font":"$MAIN_Font_Bold",
             "textSize":16,
             "rowSpacing":0,
@@ -411,7 +413,7 @@ package
          var merged:Object = this.defaultConfig();
          for(key in parsed)
          {
-            if((key == "colors" || key == "columns" || key == "columnTitles" || key == "caps" || key == "nameTags" || key == "badgeStyles") && parsed[key] != null)
+            if((key == "colors" || key == "columns" || key == "columnTitles" || key == "caps" || key == "nameTags" || key == "badgeStyles" || key == "positions") && parsed[key] != null)
             {
                for(var sub:String in parsed[key])
                {
@@ -422,6 +424,10 @@ package
             {
                merged[key] = parsed[key];
             }
+         }
+         if(parsed.positions == null && (parsed.x != null || parsed.y != null))
+         {
+            this.legacyPositions(merged,parsed.x != null ? Number(parsed.x) : 20,parsed.y != null ? Number(parsed.y) : 200);
          }
          this.baseCfg = merged;
          this.cfg = this.buildCfg();
@@ -1160,7 +1166,7 @@ package
                this.hudTools.AddMenuItem("vb_legend","Legend: " + (this.cfg.showLegend === true ? "ON" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_anchor","Anchor: " + (this.cfg.anchor == "bottom" ? "BOTTOM (grows up)" : "TOP (grows down)"),true,false,250);
                this.hudTools.AddMenuItem("vb_dock","Dock: " + (this.cfg.dock == "right" ? "RIGHT (grows left)" : "LEFT (grows right)"),true,false,250);
-               this.hudTools.AddMenuItem("vb_pos","Position " + int(this.cfg.x) + " / " + int(this.cfg.y),true,true,0);
+               this.hudTools.AddMenuItem("vb_pos","Position " + int(this.cfg.x) + " / " + int(this.cfg.y) + " (" + this.cornerName() + ")",true,true,0);
                this.hudTools.AddMenuItem("vb_cols","Two columns: " + (int(this.cfg.wrapRows) > 0 ? "ON (" + int(this.cfg.wrapRows) + " rows each)" : "OFF"),true,false,250);
                this.hudTools.AddMenuItem("vb_sts","Small text size: " + int(this.cfg.smallTextSize),true,true,0);
                this.hudTools.AddMenuItem("vb_ts","Text size: " + int(this.cfg.textSize),true,true,0);
@@ -1388,26 +1394,80 @@ package
 
       private function nudge(dir:String) : void
       {
-         var x:Number = this.ov.x != null ? Number(this.ov.x) : Number(this.cfg.x);
-         var y:Number = this.ov.y != null ? Number(this.ov.y) : Number(this.cfg.y);
+         var c:String = this.corner();
          if(dir == "0")
          {
-            delete this.ov.x;
-            delete this.ov.y;
+            delete this.ov["x_" + c];
+            delete this.ov["y_" + c];
             this.cfgText = "";
             this.loadConfig();
             return;
          }
          var dx:Number = dir == "l" ? -10 : (dir == "r" ? 10 : 0);
          var dy:Number = dir == "u" ? -10 : (dir == "d" ? 10 : (dir == "U" ? -50 : (dir == "D" ? 50 : 0)));
-         var fromRight:Boolean = this.cfg.dock == "right" && this.cfg.origin != "stage";
-         var fromBottom:Boolean = this.cfg.anchor == "bottom" && this.cfg.origin != "stage";
-         x += fromRight ? -dx : dx;
-         y += fromBottom ? -dy : dy;
-         this.ov.x = x;
-         this.ov.y = y;
-         this.cfg.x = x;
-         this.cfg.y = y;
+         this.cfg.x = Number(this.cfg.x) + dx;
+         this.cfg.y = Number(this.cfg.y) + dy;
+         this.ov["x_" + c] = this.cfg.x;
+         this.ov["y_" + c] = this.cfg.y;
+      }
+
+      // "topLeft", "topRight", "bottomLeft" or "bottomRight": the board corner that stays put
+      private function corner() : String
+      {
+         return (this.cfg.anchor == "bottom" ? "bottom" : "top") + (this.cfg.dock == "right" ? "Right" : "Left");
+      }
+
+      private function cornerName() : String
+      {
+         return (this.cfg.anchor == "bottom" ? "bottom " : "top ") + (this.cfg.dock == "right" ? "right" : "left");
+      }
+
+      // cfg.x / cfg.y = the active corner's position: "positions" from the json, then the session's menu nudges
+      private function resolvePosition() : void
+      {
+         var c:String = this.corner();
+         var d:Object = this.defaultConfig().positions[c];
+         var p:Object = this.cfg.positions != null ? this.cfg.positions[c] : null;
+         this.cfg.x = p != null && p.x != null ? Number(p.x) : Number(d.x);
+         this.cfg.y = p != null && p.y != null ? Number(p.y) : Number(d.y);
+         if(this.ov == null)
+         {
+            return;
+         }
+         if(this.ov.x != null || this.ov.y != null)
+         {
+            // stored by 1.0 / 1.1: the top-left position
+            if(this.ov.x_topLeft == null && this.ov.x != null)
+            {
+               this.ov.x_topLeft = Number(this.ov.x);
+            }
+            if(this.ov.y_topLeft == null && this.ov.y != null)
+            {
+               this.ov.y_topLeft = Number(this.ov.y);
+            }
+            delete this.ov.x;
+            delete this.ov.y;
+         }
+         if(this.ov["x_" + c] != null)
+         {
+            this.cfg.x = Number(this.ov["x_" + c]);
+         }
+         if(this.ov["y_" + c] != null)
+         {
+            this.cfg.y = Number(this.ov["y_" + c]);
+         }
+      }
+
+      // configs without "positions" (1.0 - 1.2 test builds): x / y is the top-left corner; the other corners keep
+      // the same distance from their own edges of the 16:9 HUD
+      private function legacyPositions(merged:Object, x:Number, y:Number) : void
+      {
+         merged.positions = {
+            "topLeft":{"x":x,"y":y},
+            "topRight":{"x":HUD_W - x,"y":y},
+            "bottomLeft":{"x":x,"y":HUD_H - y},
+            "bottomRight":{"x":HUD_W - x,"y":HUD_H - y}
+         };
       }
 
       private function visibleRect() : Rectangle
@@ -1427,16 +1487,33 @@ package
          return this.cfg.dock == "right" && this.cfg.mirror !== false;
       }
 
-      // place the board by its docked corner. origin "screen": x / y are distances from the visible screen's edges
-      // (left or right, top or bottom), so the same numbers work on any aspect ratio. "stage": raw coordinates of
-      // that corner.
+      // place the board by its docked corner. x / y are that corner's position in 16:9 HUD units (1920 x 1080).
+      // origin "screen": the distance to the docked edges is kept on other aspect ratios (x from the visible left
+      // edge when docked left, HUD_W - x from the visible right edge when docked right; same for y).
+      // origin "stage": raw coordinates.
       private function placeBoard(W:Number, H:Number) : void
       {
          var r:Rectangle = this.cfg.origin != "stage" ? this.visibleRect() : null;
          var x:Number = Number(this.cfg.x);
          var y:Number = Number(this.cfg.y);
-         var left:Number = this.cfg.dock == "right" ? (r != null ? r.x + r.width - x : x) - W : (r != null ? r.x : 0) + x;
-         var top:Number = this.cfg.anchor == "bottom" ? (r != null ? r.y + r.height - y : y) - H : (r != null ? r.y : 0) + y;
+         var left:Number = 0;
+         var top:Number = 0;
+         if(this.cfg.dock == "right")
+         {
+            left = (r != null ? r.right - (HUD_W - x) : x) - W;
+         }
+         else
+         {
+            left = r != null ? r.x + x : x;
+         }
+         if(this.cfg.anchor == "bottom")
+         {
+            top = (r != null ? r.bottom - (HUD_H - y) : y) - H;
+         }
+         else
+         {
+            top = r != null ? r.y + y : y;
+         }
          this.board.x = left;
          this.board.y = top;
          this.boardRect = new Rectangle(left,top,W,H);
@@ -1600,30 +1677,20 @@ package
          this.toast((small ? "small text size " : "text size ") + int(this.cfg[key]));
       }
 
-      // switch the docked edge. With origin "screen" x / y keep their meaning (distance from the edge), so the board
-      // moves to the other side; with origin "stage" the raw coordinate is mirrored across the visible screen.
+      // switch the docked edge; each dock/anchor combination keeps its own position ("positions" in the json)
       private function toggleDock(horizontal:Boolean) : void
       {
-         var vis:Rectangle = this.visibleRect();
          if(horizontal)
          {
             this.ov.dock = this.cfg.dock == "right" ? "left" : "right";
-            if(this.cfg.origin == "stage" && vis != null)
-            {
-               this.ov.x = vis.x + vis.right - Number(this.cfg.x);
-            }
          }
          else
          {
             this.ov.anchor = this.cfg.anchor == "bottom" ? "top" : "bottom";
-            if(this.cfg.origin == "stage" && vis != null)
-            {
-               this.ov.y = vis.y + vis.bottom - Number(this.cfg.y);
-            }
          }
          this.ovDirty = true;
          this.applyOverrides();
-         this.toast(horizontal ? "dock " + String(this.cfg.dock).toUpperCase() : "anchor " + String(this.cfg.anchor).toUpperCase());
+         this.toast((horizontal ? "dock " + String(this.cfg.dock).toUpperCase() : "anchor " + String(this.cfg.anchor).toUpperCase()) + ", position " + int(this.cfg.x) + " / " + int(this.cfg.y));
       }
 
       private function applyOverrides() : void
@@ -1637,6 +1704,7 @@ package
          }
          if(this.ov == null)
          {
+            this.resolvePosition();
             return;
          }
          if(this.ov.highlightScore != null)
@@ -1651,14 +1719,7 @@ package
          {
             this.cfg.anchor = String(this.ov.anchor);
          }
-         if(this.ov.x != null)
-         {
-            this.cfg.x = Number(this.ov.x);
-         }
-         if(this.ov.y != null)
-         {
-            this.cfg.y = Number(this.ov.y);
-         }
+         this.resolvePosition();
          this.badgeList = null;
          if(this.ov.levelOff === true)
          {
