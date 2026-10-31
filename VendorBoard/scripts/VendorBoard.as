@@ -336,7 +336,7 @@ package
             "presetKey":"F2",
             "colors":{
                "header":"0xecc86c","count":"0x9fd79a","countFull":"0xff6b6b","local":"0x3b7bff","remote":"0xf2f0cc",
-               "friend":"0x7fd1ae","teamLeader":"0xffb347","teamMember":"0xffcf80","wanted":"0xff5252","hidden":"0xb39ddb",
+               "friend":"0x7fd1ae","teamLeader":"0xffb347","teamMember":"0xffcf80","wanted":"0xff5252",
                "visited":"0x8f8a74","distance":"0xc8b98a","highlight":"0xf6cd60","status":"0x8fd3e8"
             },
             "badgeStyle":"pill",
@@ -1465,7 +1465,7 @@ package
          }
       }
 
-      // configs without "positions" (1.0 - 1.2 test builds): x / y is the top-left corner; the other corners keep
+      // configs without "positions" (1.0, 1.1): x / y is the top-left corner; the other corners keep
       // the same distance from their own edges of the 16:9 HUD
       private function legacyPositions(merged:Object, x:Number, y:Number) : void
       {

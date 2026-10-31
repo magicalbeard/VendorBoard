@@ -2,7 +2,8 @@
 	// VendorBoard - players on the server and what their vendors stock, on the map screen.
 	// Lives in Data\VendorBoard.json and is re-read every 10 s while the game runs; comments are allowed.
 	// Any key left out keeps its built-in default. Most of this can also be changed live from the
-	// HUDModLoader menu (F11 > VendorBoard); menu changes last for the session, this file sets the defaults.
+	// HUDModLoader menu (F11 > VendorBoard); menu changes last for the session (or are kept with
+	// "rememberChoices"), this file sets the defaults.
 
 	// ================================================================ DEFAULT (USER) FILTER - EDIT THIS
 	// This is YOUR view: the F2 preset the board starts on. It lists the categories below and nothing else.
@@ -85,13 +86,13 @@
 	// "Position 1900 / 960 (bottom right)". That move lasts for the session (or is kept by "rememberChoices");
 	// to make it permanent, copy the two numbers into the matching entry here.
 	// origin "screen": on other aspect ratios each corner keeps its distance from the screen edges it is docked to,
-	// so the same numbers work on 16:9 and ultrawide. origin "stage": raw HUD coordinates (HUDPlayerList
+	// so the same numbers work on 16:9 and ultrawide. origin "stage": raw HUD coordinates (Server Player List
 	// convention: on a 21:9 monitor the left edge is near x = -320 and the right edge near x = 2240).
 	//
 	// Layout that never covers the World Activity list / fast-travel menu (lower middle of the map): put the
 	// board to the right of that panel with a narrow shop column -
 	//   "origin": "stage", "positions": { "topLeft": { "x": 410, "y": 200 } },
-	//   "columns": { "level": 36, "name": 110, "distance": 100, "cost": 44, "vendor": 300, "vendorMax": 300 },
+	//   "columns": { "level": 46, "name": 110, "distance": 100, "cost": 44, "vendor": 300, "vendorMax": 300 },
 	//   "nameMaxChars": 12
 	// Ultrawide: the defaults work unchanged. The raw-coordinate layout the author uses on a 21:9 monitor:
 	//   "origin": "stage", "positions": { "topLeft": { "x": -320, "y": 200 }, "topRight": { "x": 2240, "y": 200 } }
@@ -205,7 +206,7 @@
 	"colors": {
 		"header": "0xecc86c", "count": "0x9fd79a", "countFull": "0xff6b6b",
 		"local": "0x3b7bff", "remote": "0xf2f0cc", "friend": "0x7fd1ae",
-		"teamLeader": "0xffb347", "teamMember": "0xffcf80", "wanted": "0xff5252", "hidden": "0xb39ddb",
+		"teamLeader": "0xffb347", "teamMember": "0xffcf80", "wanted": "0xff5252",
 		"visited": "0x8f8a74", "distance": "0xc8b98a", "highlight": "0xf6cd60", "status": "0x8fd3e8"
 	},
 
@@ -224,7 +225,7 @@
 	// Interest score = player level / levelScore.divisor (capped) + per category: weight x count, capped at cap.
 	// Drives the row highlight (highlightScore), the BEST sort and the INTERESTING preset (its "minScore").
 	// Only the categories listed here count; anything else (3-star mod boxes, plans, ...) adds nothing.
-	// Menu: FILTERING > Score (threshold ++/--, category groups and level on/off).
+	// Menu: FILTERING > Score (highlight threshold ++/--, and which category groups and the player level count).
 	"score": {
 		"MODS_WEAPON4": { "weight": 10, "cap": 40 },
 		"MODS_ARMOR4":  { "weight": 10, "cap": 40 },
@@ -273,6 +274,7 @@
 		// INTERESTING: vendors whose interest score (SCORE section above) is at least minScore. It has no "badges"
 		// of its own, so it shows the DEFAULT (USER) badges and follows the menu badge toggles. Change "minScore"
 		// here, the weights in "score" / "levelScore" above, or add a "badges" list here to give it its own pills.
+		// The menu's Score threshold is the row highlight (highlightScore), not this preset's minScore.
 		{ "name": "INTERESTING (BETA)",  "vendorsOnly": true, "minScore": 6 },
 		{ "name": "MODS ONLY",
 		  "anyOf":  ["MODS_WEAPON4", "MODS_ARMOR4", "MODS_PA4", "MODS_WEAPON3", "MODS_ARMOR3", "MODS_PA3", "MODS_WEAPON2", "MODS_ARMOR2", "MODS_PA2", "MODS_WEAPON1", "MODS_ARMOR1", "MODS_PA1", "MODS"],
